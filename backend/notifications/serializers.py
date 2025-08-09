@@ -9,7 +9,7 @@ class PushSubscriptionSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['id', 'title', 'message', 'type', 'sent_at', 'delivered']
+        fields = ['id', 'title', 'body', 'type', 'sent_at', 'delivered']
 
 class EmailPreferenceSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,4 +1,5 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, viewsets
+from rest_framework.response import Response
 from .models import PushSubscription, Notification, EmailPreference
 from .serializers import PushSubscriptionSerializer, NotificationSerializer, EmailPreferenceSerializer
 
@@ -8,6 +9,22 @@ class PushSubscriptionCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        
+class PushSubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = PushSubscription.objects.all()
+    serializer_class = PushSubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        sub, created = PushSubscription.objects.get_or_create(
+            user=request.user,
+            endpoint=request.data['endpoint'],
+            defaults={
+                'p256dh': request.data['keys']['p256dh'],
+                'auth': request.data['keys']['auth']
+            }
+        )
+        return Response({"message": "Subscription saved"})
 
 class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer

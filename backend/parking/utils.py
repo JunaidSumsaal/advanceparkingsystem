@@ -16,7 +16,4 @@ def send_websocket_update(spot):
             }
         }
     )
-    
-def send_spot_available_notification(spot):
-    # Later: integrate with push/email notifications
-    print(f"[NOTIFY] Spot available: {spot.name}")
+

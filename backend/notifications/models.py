@@ -14,7 +14,7 @@ class PushSubscription(models.Model):
 class Notification(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    message = models.TextField()
+    body = models.TextField()
     type = models.CharField(max_length=50, default="general")
     sent_at = models.DateTimeField(auto_now_add=True)
     delivered = models.BooleanField(default=False)

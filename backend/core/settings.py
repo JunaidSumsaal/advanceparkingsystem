@@ -40,7 +40,7 @@ ROOT_URLCONF = 'core.urls'
 
 AUTH_USER_MODEL = 'accounts.User'
 
-ASGI_APPLICATION = "parkingsystem.asgi.application"
+ASGI_APPLICATION = "core.asgi.application"
 
 TEMPLATES = [
     {

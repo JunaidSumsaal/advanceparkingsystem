@@ -1,8 +1,8 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from math import radians, sin, cos, sqrt, atan2
-from .models import ParkingSpot, Booking, SpotReview, SpotAvailabilityLog
+from .models import ParkingSpot, Booking, SpotAvailabilityLog
 from .serializers import (
     ParkingSpotSerializer, BookingSerializer,
     SpotReviewSerializer, SpotAvailabilityLogSerializer
@@ -60,6 +60,32 @@ class BookParkingSpotView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        
+class BookingViewSet(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        spot_id = request.data.get("parking_spot")
+        try:
+            spot = ParkingSpot.objects.get(id=spot_id, is_available=True)
+        except ParkingSpot.DoesNotExist:
+            return Response({"error": "Spot not available"}, status=status.HTTP_400_BAD_REQUEST)
+
+        booking = Booking.objects.create(user=request.user, parking_spot=spot)
+        spot.is_available = False
+        spot.save()
+        return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
+
+    def end_booking(self, request, pk=None):
+        try:
+            booking = Booking.objects.get(pk=pk, user=request.user, is_active=True)
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found or already ended"}, status=404)
+
+        booking.end_booking()
+        return Response({"message": "Booking ended, spot is now free"})
 
 class NavigateToSpotView(APIView):
     permission_classes = [permissions.IsAuthenticated]

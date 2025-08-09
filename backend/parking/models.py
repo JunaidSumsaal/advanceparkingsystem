@@ -1,5 +1,9 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
+
+from notifications.models import PushSubscription
+from notifications.utils import send_push_notification
 
 class ParkingSpot(models.Model):
     TYPE_CHOICES = [
@@ -27,6 +31,17 @@ class Booking(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    
+    def end_booking(self):
+        """Mark booking as ended and free the spot"""
+        self.is_active = False
+        self.end_time = timezone.now()
+        self.save()
+
+        # Make spot available again
+        self.parking_spot.is_available = True
+        self.parking_spot.save()
+        notify_spot_available(self.parking_spot)
 
     def __str__(self):
         return f"Booking: {self.user.username} - {self.parking_spot.name}"
@@ -48,3 +63,8 @@ class SpotAvailabilityLog(models.Model):
 
     def __str__(self):
         return f"{self.parking_spot.name} - {self.is_available} at {self.timestamp}"
+
+def notify_spot_available(spot):
+    subscriptions = PushSubscription.objects.all()
+    for sub in subscriptions:
+        send_push_notification(sub, "Spot Available", f"{spot.name} is now free")

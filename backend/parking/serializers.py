@@ -10,6 +10,7 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = '__all__'
+        read_only_fields = ('user', 'start_time', 'end_time', 'is_active')
 
 class SpotReviewSerializer(serializers.ModelSerializer):
     class Meta:
