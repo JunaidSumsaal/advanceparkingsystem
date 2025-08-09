@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'accounts',
     'parking',
     'notifications',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -38,6 +39,8 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'core.urls'
 
 AUTH_USER_MODEL = 'accounts.User'
+
+ASGI_APPLICATION = "parkingsystem.asgi.application"
 
 TEMPLATES = [
     {
@@ -97,4 +100,13 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env.int('ACCESS_TOKEN_LIFETIME', 60)),
     'REFRESH_TOKEN_LIFETIME': timedelta(minutes=env.int('REFRESH_TOKEN_LIFETIME', 1440)),
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
 }
