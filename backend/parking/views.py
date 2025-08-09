@@ -9,9 +9,8 @@ from .serializers import (
     SpotReviewSerializer, SpotAvailabilityLogSerializer, SpotPredictionSerializer
 )
 from .prediction_service import predict_spots_nearby
-
-# Distance calculation
-
+from core.metrics import PREDICTION_REQUESTS, PREDICTION_LATENCY, PREDICTION_SAVED
+from prometheus_client import Summary
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
@@ -65,55 +64,56 @@ class NearbyPredictionsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        lat = request.query_params.get('lat')
-        lng = request.query_params.get('lng')
-        radius_km = float(request.query_params.get('radius', getattr(request.user, 'default_radius_km', 2)))
-        time_ahead = int(request.query_params.get('time_ahead', 15))
+        PREDICTION_REQUESTS.inc()
+        with PREDICTION_LATENCY.time():
+            lat = request.query_params.get('lat')
+            lng = request.query_params.get('lng')
+            radius_km = float(request.query_params.get('radius', getattr(request.user, 'default_radius_km', 2)))
+            time_ahead = int(request.query_params.get('time_ahead', 15))
 
-        if not lat or not lng:
-            return Response({"error": "lat and lng are required"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            lat = float(lat)
-            lng = float(lng)
-        except ValueError:
-            return Response({"error": "invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+            if not lat or not lng:
+                return Response({"error": "lat and lng are required"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                lat = float(lat)
+                lng = float(lng)
+            except ValueError:
+                return Response({"error": "invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Quickly filter candidates by bounding box then refine with Haversine
-        lat_delta = radius_km / 111.0  # ~1 deg lat ~= 111 km
-        lng_delta = radius_km / (111.0 * abs(math.cos(radians(lat))) or 1.0)
+            lat_delta = radius_km / 111.0  # ~1 deg lat ~= 111 km
+            lng_delta = radius_km / (111.0 * abs(math.cos(radians(lat))) or 1.0)
 
-        candidates = ParkingSpot.objects.filter(
-            latitude__gte=lat - lat_delta,
-            latitude__lte=lat + lat_delta,
-            longitude__gte=lng - lng_delta,
-            longitude__lte=lng + lng_delta,
-        )
+            candidates = ParkingSpot.objects.filter(
+                latitude__gte=lat - lat_delta,
+                latitude__lte=lat + lat_delta,
+                longitude__gte=lng - lng_delta,
+                longitude__lte=lng + lng_delta,
+            )
 
-        # refine and only consider spots within radius
-        candidate_list = []
-        for s in candidates:
-            # use existing calculate_distance function if available
-            from .views import calculate_distance  # avoid circular import; or import util
-            dist = calculate_distance(lat, lng, float(s.latitude), float(s.longitude))
-            if dist <= radius_km:
-                candidate_list.append(s)
+            candidate_list = []
+            for s in candidates:
+                from .views import calculate_distance
+                dist = calculate_distance(lat, lng, float(s.latitude), float(s.longitude))
+                if dist <= radius_km:
+                    candidate_list.append(s)
 
-        predictions = predict_spots_nearby(candidate_list, time_ahead_minutes=time_ahead)
+            predictions = predict_spots_nearby(candidate_list, time_ahead_minutes=time_ahead)
 
-        response_data = []
-        for p in predictions:
-            spot = p['spot']
-            response_data.append({
-                "id": spot.id,
-                "name": spot.name,
-                "latitude": spot.latitude,
-                "longitude": spot.longitude,
-                "probability": round(p['probability'], 3),
-                "predicted_for_time": p['predicted_for_time']
-            })
+            response_data = []
+            for p in predictions:
+                spot = p['spot']
+                response_data.append({
+                    "id": spot.id,
+                    "name": spot.name,
+                    "latitude": spot.latitude,
+                    "longitude": spot.longitude,
+                    "probability": round(p['probability'], 3),
+                    "predicted_for_time": p['predicted_for_time']
+                })
 
-        serializer = SpotPredictionSerializer(response_data, many=True)
-        return Response(serializer.data)
+            serializer = SpotPredictionSerializer(response_data, many=True)
+            predictions = []
+            PREDICTION_SAVED.inc(len(predictions))
+            return Response(serializer.data)
 
 
 class BookParkingSpotView(generics.CreateAPIView):
