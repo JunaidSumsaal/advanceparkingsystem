@@ -52,3 +52,12 @@ def send_push_notification(subscription, title, body):
         Notification.objects.create(user=subscription.user, title=title, body=body, success=True)
     except WebPushException as e:
         Notification.objects.create(user=subscription.user, title=title, body=body, success=False)
+
+def log_notification_event(user, title, message, n_type, status):
+    Notification.objects.create(
+        user=user,
+        title=title,
+        message=message,
+        type=n_type,
+        status=status
+    )

@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-
 from notifications.models import PushSubscription
 from notifications.utils import send_push_notification
 

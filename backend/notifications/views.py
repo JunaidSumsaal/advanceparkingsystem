@@ -46,3 +46,18 @@ class PushSubscriptionListView(generics.ListAPIView):
 
     def get_queryset(self):
         return PushSubscription.objects.filter(user=self.request.user).order_by('-created_at')
+
+class UnsubscribeNotificationView(generics.DestroyAPIView):
+    queryset = PushSubscription.objects.all()
+    serializer_class = PushSubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return PushSubscription.objects.get(user=self.request.user)
+
+class NotificationHistoryView(generics.ListAPIView):
+    serializer_class = PushSubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return PushSubscription.objects.filter(user=self.request.user)

@@ -12,12 +12,19 @@ class PushSubscription(models.Model):
         return f"Push Subscription for {self.user.username}"
 
 class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('spot_available', 'Spot Available'),
+        ('booking_reminder', 'Booking Reminder'),
+        ('general', 'General')
+    ]
+    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     body = models.TextField()
-    type = models.CharField(max_length=50, default="general")
+    type = models.CharField(max_length=50, default="general", choices=NOTIFICATION_TYPES)
     sent_at = models.DateTimeField(auto_now_add=True)
     delivered = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, default='pending')
 
     def __str__(self):
         return f"{self.title} -> {self.user.username}"
