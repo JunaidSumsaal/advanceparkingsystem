@@ -15,6 +15,8 @@ class ParkingSpot(models.Model):
     is_available = models.BooleanField(default=True)
     provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='provided_spots')
     created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    
 
     def __str__(self):
         return f"{self.name} ({self.spot_type})"

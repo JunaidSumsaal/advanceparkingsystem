@@ -83,3 +83,9 @@ class SpotAvailabilityLogListView(generics.ListAPIView):
     queryset = SpotAvailabilityLog.objects.all()
     serializer_class = SpotAvailabilityLogSerializer
     permission_classes = [permissions.IsAdminUser]
+
+class ParkingSpotPollingView(APIView):
+    def get(self, request):
+        spots = ParkingSpot.objects.all()
+        serializer = ParkingSpotSerializer(spots, many=True)
+        return Response(serializer.data)
