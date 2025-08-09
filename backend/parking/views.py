@@ -1,3 +1,4 @@
+import math
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -5,10 +6,13 @@ from math import radians, sin, cos, sqrt, atan2
 from .models import ParkingSpot, Booking, SpotAvailabilityLog
 from .serializers import (
     ParkingSpotSerializer, BookingSerializer,
-    SpotReviewSerializer, SpotAvailabilityLogSerializer
+    SpotReviewSerializer, SpotAvailabilityLogSerializer, SpotPredictionSerializer
 )
+from .prediction_service import predict_spots_nearby
 
 # Distance calculation
+
+
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
@@ -17,6 +21,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
     c = 2 * atan2(sqrt(a), sqrt(1-a))
     return R * c
+
 
 class ParkingSpotListCreateView(generics.ListCreateAPIView):
     queryset = ParkingSpot.objects.all()
@@ -28,6 +33,7 @@ class ParkingSpotListCreateView(generics.ListCreateAPIView):
             return Response({"error": "Only providers or admins can add spots."}, status=403)
         spot = serializer.save(provider=self.request.user)
         SpotAvailabilityLog.objects.create(parking_spot=spot, is_available=spot.is_available)
+
 
 class NearbyParkingSpotsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -54,13 +60,70 @@ class NearbyParkingSpotsView(APIView):
         serializer = ParkingSpotSerializer(nearby_spots, many=True)
         return Response(serializer.data)
 
+
+class NearbyPredictionsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        lat = request.query_params.get('lat')
+        lng = request.query_params.get('lng')
+        radius_km = float(request.query_params.get('radius', getattr(request.user, 'default_radius_km', 2)))
+        time_ahead = int(request.query_params.get('time_ahead', 15))
+
+        if not lat or not lng:
+            return Response({"error": "lat and lng are required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            lat = float(lat)
+            lng = float(lng)
+        except ValueError:
+            return Response({"error": "invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Quickly filter candidates by bounding box then refine with Haversine
+        lat_delta = radius_km / 111.0  # ~1 deg lat ~= 111 km
+        lng_delta = radius_km / (111.0 * abs(math.cos(radians(lat))) or 1.0)
+
+        candidates = ParkingSpot.objects.filter(
+            latitude__gte=lat - lat_delta,
+            latitude__lte=lat + lat_delta,
+            longitude__gte=lng - lng_delta,
+            longitude__lte=lng + lng_delta,
+        )
+
+        # refine and only consider spots within radius
+        candidate_list = []
+        for s in candidates:
+            # use existing calculate_distance function if available
+            from .views import calculate_distance  # avoid circular import; or import util
+            dist = calculate_distance(lat, lng, float(s.latitude), float(s.longitude))
+            if dist <= radius_km:
+                candidate_list.append(s)
+
+        predictions = predict_spots_nearby(candidate_list, time_ahead_minutes=time_ahead)
+
+        response_data = []
+        for p in predictions:
+            spot = p['spot']
+            response_data.append({
+                "id": spot.id,
+                "name": spot.name,
+                "latitude": spot.latitude,
+                "longitude": spot.longitude,
+                "probability": round(p['probability'], 3),
+                "predicted_for_time": p['predicted_for_time']
+            })
+
+        serializer = SpotPredictionSerializer(response_data, many=True)
+        return Response(serializer.data)
+
+
 class BookParkingSpotView(generics.CreateAPIView):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-        
+
+
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
@@ -87,6 +150,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.end_booking()
         return Response({"message": "Booking ended, spot is now free"})
 
+
 class NavigateToSpotView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -98,6 +162,7 @@ class NavigateToSpotView(APIView):
         maps_url = f"https://www.google.com/maps/dir/?api=1&destination={spot.latitude},{spot.longitude}"
         return Response({"navigation_url": maps_url})
 
+
 class SpotReviewCreateView(generics.CreateAPIView):
     serializer_class = SpotReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -105,10 +170,12 @@ class SpotReviewCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+
 class SpotAvailabilityLogListView(generics.ListAPIView):
     queryset = SpotAvailabilityLog.objects.all()
     serializer_class = SpotAvailabilityLogSerializer
     permission_classes = [permissions.IsAdminUser]
+
 
 class ParkingSpotPollingView(APIView):
     def get(self, request):

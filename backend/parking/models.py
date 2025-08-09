@@ -67,3 +67,18 @@ def notify_spot_available(spot):
     subscriptions = PushSubscription.objects.all()
     for sub in subscriptions:
         send_push_notification(sub, "Spot Available", f"{spot.name} is now free")
+        
+class SpotPredictionLog(models.Model):
+    parking_spot = models.ForeignKey(ParkingSpot, on_delete=models.CASCADE, related_name='predictions')
+    probability = models.FloatField()
+    predicted_for_time = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['parking_spot', 'predicted_for_time']),
+        ]
+
+    def __str__(self):
+        return f"Pred for {self.parking_spot.id} @ {self.predicted_for_time} p={self.probability:.2f}"
+
