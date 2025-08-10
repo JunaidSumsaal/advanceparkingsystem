@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils import timezone
 from .models import SpotAvailabilityLog, SpotPredictionLog
 import math
@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 def compute_mvp_probability(spot, lookback_entries=200):
     """
-    Simple heuristic:
-      - Use recent availability history (last N logs) to compute availability ratio.
-      - Weight recent entries more heavily.
-      - Combine with current spot.is_available to nudge score.
-    Returns probability in [0,1].
+        Simple heuristic:
+            - Use recent availability history (last N logs) to compute availability ratio.
+            - Weight recent entries more heavily.
+            - Combine with current spot.is_available to nudge score.
+        Returns probability in [0,1].
     """
     logs_qs = SpotAvailabilityLog.objects.filter(parking_spot=spot).order_by('-timestamp')[:lookback_entries]
     logs = list(logs_qs)
@@ -35,9 +35,9 @@ def compute_mvp_probability(spot, lookback_entries=200):
 
 def predict_spots_nearby(spots, time_ahead_minutes=15):
     """
-    For a list/queryset of ParkingSpot objects, produce predictions.
-    Returns list of dicts with parking_spot and probability.
-    Also writes SpotPredictionLog entries.
+        For a list/queryset of ParkingSpot objects, produce predictions.
+        Returns list of dicts with parking_spot and probability.
+        Also writes SpotPredictionLog entries.
     """
     results = []
     predicted_for = timezone.now() + timedelta(minutes=time_ahead_minutes)

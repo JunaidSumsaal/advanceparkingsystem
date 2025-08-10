@@ -9,8 +9,14 @@ from .serializers import (
     SpotReviewSerializer, SpotAvailabilityLogSerializer, SpotPredictionSerializer
 )
 from .prediction_service import predict_spots_nearby
-from core.metrics import PREDICTION_REQUESTS, PREDICTION_LATENCY, PREDICTION_SAVED
+from core.metrics import (
+    PREDICTION_REQUESTS, PREDICTION_LATENCY, PREDICTION_SAVED,
+    BOOKING_CREATED, BOOKING_ENDED, ACTIVE_AVAILABLE_SPOTS, SPOT_SELECTED
+)
 from prometheus_client import Summary
+
+def update_available_spots_metric():
+    ACTIVE_AVAILABLE_SPOTS.set(ParkingSpot.objects.filter(is_available=True).count())
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
@@ -111,8 +117,7 @@ class NearbyPredictionsView(APIView):
                 })
 
             serializer = SpotPredictionSerializer(response_data, many=True)
-            predictions = []
-            PREDICTION_SAVED.inc(len(predictions))
+            PREDICTION_SAVED.inc(len(response_data))
             return Response(serializer.data)
 
 
@@ -148,6 +153,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             return Response({"error": "Booking not found or already ended"}, status=404)
 
         booking.end_booking()
+        BOOKING_ENDED.inc()
+        update_available_spots_metric()
         return Response({"message": "Booking ended, spot is now free"})
 
 
@@ -160,6 +167,7 @@ class NavigateToSpotView(APIView):
         except ParkingSpot.DoesNotExist:
             return Response({"error": "Spot not found"}, status=404)
         maps_url = f"https://www.google.com/maps/dir/?api=1&destination={spot.latitude},{spot.longitude}"
+        SPOT_SELECTED.inc()
         return Response({"navigation_url": maps_url})
 
 

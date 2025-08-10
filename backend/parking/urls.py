@@ -17,5 +17,4 @@ urlpatterns = [
     path('review/', SpotReviewCreateView.as_view(), name='spot_review'),
     path('availability/logs/', SpotAvailabilityLogListView.as_view(), name='availability_logs'),
     path('predictions/nearby/', NearbyPredictionsView.as_view(), name='predictions_nearby'),
-
 ] + router.urls

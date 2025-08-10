@@ -22,5 +22,5 @@ def send_booking_reminders():
                 f"Your booking for {booking.parking_spot.name} will expire in 10 minutes."
             ) else "failed"
             log_notification_event(booking.user, "Booking Expiring Soon",
-                                  f"Your booking for {booking.parking_spot.name} will expire in 10 minutes.",
-                                  "booking_reminder", status)
+                                f"Your booking for {booking.parking_spot.name} will expire in 10 minutes.",
+                                "booking_reminder", status)
