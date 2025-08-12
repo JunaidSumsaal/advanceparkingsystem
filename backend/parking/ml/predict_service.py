@@ -19,7 +19,6 @@ def load_model():
 def predict_for_spots(spots, user_lat=None, user_lng=None):
     # sourcery skip: aware-datetime-for-utc, for-append-to-extend, list-comprehension
     model = load_model()
-    # build feature rows matching training features
     rows = []
     spot_map = []
     for s in spots:
@@ -43,6 +42,5 @@ def predict_for_spots(spots, user_lat=None, user_lng=None):
     results = []
     for s, p in zip(spot_map, probs):
         results.append({"spot": s, "probability": float(p)})
-    # sort
     results.sort(key=lambda x: x["probability"], reverse=True)
     return results

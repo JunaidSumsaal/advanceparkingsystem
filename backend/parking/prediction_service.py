@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 from django.utils import timezone
 from .models import SpotAvailabilityLog, SpotPredictionLog
 import math

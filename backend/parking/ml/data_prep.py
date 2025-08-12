@@ -4,7 +4,6 @@ from django.utils import timezone
 from parking.models import SpotAvailabilityLog, ParkingSpot, Booking
 from datetime import timedelta
 
-# PARAMETERS
 HORIZON_MIN = 15  # predict free in 15 minutes
 LOOKBACK_SECONDS = 60 * 60
 
@@ -22,23 +21,19 @@ def build_examples_for_spot(spot, horizon_min=HORIZON_MIN, lookback_seconds=LOOK
     end = logs[-1].timestamp
     current = start
     while current + timedelta(minutes=horizon_min) <= end:
-        # gather logs within lookback window [current - lookback, current)
         lookback_start = current - timedelta(seconds=lookback_seconds)
         window_logs = [l for l in logs if lookback_start <= l.timestamp < current]
         if not window_logs:
             current += timedelta(seconds=step_seconds)
             continue
 
-        # label: whether spot is available at current + horizon
         target_time = current + timedelta(minutes=horizon_min)
-        # find nearest log at/after target_time up to tolerance e.g., 2*step_seconds
         future_logs = [l for l in logs if l.timestamp >= target_time]
         if not future_logs:
             current += timedelta(seconds=step_seconds)
             continue
         label = 1 if future_logs[0].is_available else 0
 
-        # feature examples:
         avail_vals = [1 if l.is_available else 0 for l in window_logs]
         ratio_15m = np.mean(avail_vals[-15:]) if avail_vals else 0
         ratio_60m = np.mean(avail_vals[-60:]) if avail_vals else 0
@@ -48,7 +43,6 @@ def build_examples_for_spot(spot, horizon_min=HORIZON_MIN, lookback_seconds=LOOK
         )
         last_status = avail_vals[-1]
 
-        # booking features
         active_booking = Booking.objects.filter(parking_spot=spot, start_time__lte=current, is_active=True).exists()
 
         row = {

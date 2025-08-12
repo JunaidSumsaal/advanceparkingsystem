@@ -7,7 +7,6 @@ def evaluate_predictions(tolerance_seconds=120):
     preds = SpotPredictionLog.objects.all()
     rows = []
     for p in preds:
-        # find actual availability at predicted_for_time within tolerance
         t = p.predicted_for_time
         logs = SpotAvailabilityLog.objects.filter(parking_spot=p.parking_spot, timestamp__gte=t - timedelta(seconds=tolerance_seconds), timestamp__lte=t + timedelta(seconds=tolerance_seconds)).order_by('timestamp')
         if not logs.exists():
