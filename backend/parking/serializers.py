@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ParkingSpot, Booking, SpotReview, SpotAvailabilityLog
+from .models import ParkingFacility, ParkingSpot, Booking, SpotReview, SpotAvailabilityLog
 
 class ParkingSpotSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,3 +29,15 @@ class SpotPredictionSerializer(serializers.Serializer):
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     probability = serializers.FloatField()
     predicted_for_time = serializers.DateTimeField()
+
+class ParkingFacilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParkingFacility
+        fields = ['id', 'name', 'latitude', 'longitude', 'address']
+
+    def create(self, validated_data):
+        request = self.context['request']
+        return ParkingFacility.objects.create(
+            provider=request.user,
+            **validated_data
+        )

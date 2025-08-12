@@ -2,10 +2,12 @@ import math
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from math import radians, sin, cos, sqrt, atan2
-from .models import ParkingSpot, Booking, SpotAvailabilityLog
+from math import radians
+from accounts.utils import IsProviderOrAdmin
+from parking.utils import calculate_distance
+from .models import ParkingFacility, ParkingSpot, Booking, SpotAvailabilityLog
 from .serializers import (
-    ParkingSpotSerializer, BookingSerializer,
+    ParkingFacilitySerializer, ParkingSpotSerializer, BookingSerializer,
     SpotReviewSerializer, SpotAvailabilityLogSerializer, SpotPredictionSerializer
 )
 from .prediction_service import predict_spots_nearby
@@ -13,20 +15,9 @@ from core.metrics import (
     PREDICTION_REQUESTS, PREDICTION_LATENCY, PREDICTION_SAVED,
     BOOKING_CREATED, BOOKING_ENDED, ACTIVE_AVAILABLE_SPOTS, SPOT_SELECTED
 )
-from prometheus_client import Summary
 
 def update_available_spots_metric():
     ACTIVE_AVAILABLE_SPOTS.set(ParkingSpot.objects.filter(is_available=True).count())
-
-def calculate_distance(lat1, lon1, lat2, lon2):
-    R = 6371
-    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1-a))
-    return R * c
-
 
 class ParkingSpotListCreateView(generics.ListCreateAPIView):
     queryset = ParkingSpot.objects.all()
@@ -39,6 +30,16 @@ class ParkingSpotListCreateView(generics.ListCreateAPIView):
         spot = serializer.save(provider=self.request.user)
         SpotAvailabilityLog.objects.create(parking_spot=spot, is_available=spot.is_available)
 
+
+class ParkingFacilityCreateView(generics.ListCreateAPIView):
+    serializer_class = ParkingFacilitySerializer
+    permission_classes = [IsProviderOrAdmin]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'provider':
+            return ParkingFacility.objects.filter(provider=user)
+        return ParkingFacility.objects.all()
 
 class NearbyParkingSpotsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -126,7 +127,9 @@ class BookParkingSpotView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        BOOKING_CREATED.inc()
         serializer.save(user=self.request.user)
+        update_available_spots_metric()
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -156,7 +159,6 @@ class BookingViewSet(viewsets.ModelViewSet):
         BOOKING_ENDED.inc()
         update_available_spots_metric()
         return Response({"message": "Booking ended, spot is now free"})
-
 
 class NavigateToSpotView(APIView):
     permission_classes = [permissions.IsAuthenticated]

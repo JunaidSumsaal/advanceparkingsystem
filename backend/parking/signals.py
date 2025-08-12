@@ -1,22 +1,10 @@
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from .models import ParkingSpot
-from .utils import send_websocket_update
-from .models import ParkingSpot, Booking
+from .utils import calculates_distance, send_websocket_update
+from .models import ParkingSpot
 from notifications.utils import send_push_notification, log_notification_event, send_spot_available_notification
 from notifications.models import PushSubscription
-from django.utils.timezone import now
-from math import radians, sin, cos, sqrt, atan2
-
-
-def calculate_distance(lat1, lon1, lat2, lon2):
-    # Haversine formula
-    R = 6371.0
-    dlat = radians(lat2 - lat1)
-    dlon = radians(lon2 - lon1)
-    a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
-    return R * 2 * atan2(sqrt(a), sqrt(1 - a))
-
 
 @receiver(pre_save, sender=ParkingSpot)
 def spot_availability_change(sender, instance, **kwargs):
@@ -29,7 +17,7 @@ def spot_availability_change(sender, instance, **kwargs):
         for sub in subscriptions:
             user_profile = getattr(sub.user, "profile", None)
             if user_profile:
-                distance = calculate_distance(
+                distance = calculates_distance(
                     float(instance.latitude),
                     float(instance.longitude),
                     float(user_profile.latitude),
@@ -48,7 +36,6 @@ def spot_availability_change(sender, instance, **kwargs):
                     log_notification_event(sub.user, "Parking Spot Available",
                                         f"{instance.name} is now free!",
                                         "spot_available", status)
-
 
 @receiver(pre_save, sender=ParkingSpot)
 def notify_availability_change(sender, instance, **kwargs):
