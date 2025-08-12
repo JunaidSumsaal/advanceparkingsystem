@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from parking.utils import notify_spot_available
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class ParkingFacility(models.Model):
@@ -16,8 +17,15 @@ class ParkingFacility(models.Model):
         limit_choices_to={"role": "provider"}
     )
     name = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    capacity = models.IntegerField(blank=True, null=True)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6,
+        validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6,
+        validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)]
+    )
     address = models.CharField(max_length=500, blank=True, null=True)
     attendants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -28,7 +36,13 @@ class ParkingFacility(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} ({self.provider.username})"
+        provider_name = getattr(self.provider, 'username', 'Unknown')
+        return f"{self.name} ({provider_name})"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['latitude', 'longitude'])
+        ]
 
 
 class AttendantAssignmentLog(models.Model):
@@ -40,7 +54,7 @@ class AttendantAssignmentLog(models.Model):
     facility = models.ForeignKey(ParkingFacility, on_delete=models.CASCADE, related_name='attendant_logs')
     attendant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attendant_logs')
     performed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                        null=True, related_name='attendant_actions')
+                                     null=True, related_name='attendant_actions')
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -65,8 +79,14 @@ class ParkingSpot(models.Model):
         blank=True
     )
     name = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6,
+        validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6,
+        validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)]
+    )
     spot_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='public')
     price_per_hour = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     is_available = models.BooleanField(default=True)
@@ -91,7 +111,6 @@ class ParkingSpot(models.Model):
         indexes = [
             models.Index(fields=['is_available']),
         ]
-
 
 class Booking(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

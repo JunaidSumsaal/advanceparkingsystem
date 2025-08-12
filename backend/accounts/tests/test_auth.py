@@ -30,7 +30,7 @@ class AccountsAPITests(APITestCase):
         # Create test facility
         self.facility = ParkingFacility.objects.create(
             name="Test Facility",
-            owner=self.provider_user,
+            provider=self.provider_user,
             latitude=0.0,   # Default test coordinate
             longitude=0.0,  # Default test coordinate
             address="123 Test Street",
@@ -112,14 +112,14 @@ class AccountsAPITests(APITestCase):
 
     def test_admin_can_list_all_users(self):
         self.authenticate(self.admin_user)
-        url = reverse("user-list")  # Router name from AdminUserViewSet
+        url = reverse("admin-users-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 3)
 
     def test_provider_sees_only_their_attendants(self):
         self.authenticate(self.provider_user)
-        url = reverse("user-list")
+        url = reverse("admin-users-list")
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Providers have no attendants yet
@@ -127,7 +127,7 @@ class AccountsAPITests(APITestCase):
 
     def test_admin_can_create_any_user(self):
         self.authenticate(self.admin_user)
-        url = reverse("user-list")
+        url = reverse("add-attendant")
         data = {"username": "newatt", "email": "att@example.com", "password": "pass123", "role": "attendant"}
         res = self.client.post(url, data)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -135,7 +135,7 @@ class AccountsAPITests(APITestCase):
 
     def test_provider_role_forced_on_attendant_creation(self):
         self.authenticate(self.provider_user)
-        url = reverse("user-list")
+        url = reverse("admin-users-list")
         data = {"username": "forcedatt", "email": "f@example.com", "password": "pass123", "role": "admin"}
         res = self.client.post(url, data)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -147,7 +147,7 @@ class AccountsAPITests(APITestCase):
 
     def test_assign_attendant(self):
         self.authenticate(self.provider_user)
-        url = reverse("facility-attendants", args=[self.facility.id])
+        url = reverse("facility-attendants-manage", args=[self.facility.id])
         data = {"action": "assign", "attendant_id": self.attendant_user.id}
         res = self.client.post(url, data)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -158,7 +158,7 @@ class AccountsAPITests(APITestCase):
         self.authenticate(self.provider_user)
         # First assign
         AttendantAssignmentLog.objects.create(attendant=self.attendant_user, facility=self.facility)
-        url = reverse("facility-attendants", args=[self.facility.id])
+        url = reverse("facility-attendants-manage", args=[self.facility.id])
         data = {"action": "remove", "attendant_id": self.attendant_user.id}
         res = self.client.post(url, data)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -168,9 +168,14 @@ class AccountsAPITests(APITestCase):
     def test_provider_cannot_manage_other_facility(self):
         other_provider = User.objects.create_user(
             username="prov2", email="p2@example.com", password="pass123", role="provider")
-        other_facility = ParkingFacility.objects.create(name="Other Facility", provider=other_provider)
+        other_facility = ParkingFacility.objects.create(
+            name="Other Facility",
+            provider=other_provider,
+            latitude=0.0,
+            longitude=0.0
+        )
 
         self.authenticate(self.provider_user)
-        url = reverse("facility-attendants", args=[other_facility.id])
+        url = reverse("facility-attendants-manage", args=[other_facility.id])
         res = self.client.post(url, {"action": "assign", "attendant_id": self.attendant_user.id})
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)

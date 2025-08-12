@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from math import radians
 from accounts.utils import IsProviderOrAdmin
-from parking.utils import calculate_distance
+from parking.utils import calculates_distance
 from .models import ParkingFacility, ParkingSpot, Booking, SpotAvailabilityLog
 from .serializers import (
     ParkingFacilitySerializer, ParkingSpotSerializer, BookingSerializer,
@@ -37,9 +37,15 @@ class ParkingFacilityCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'provider':
+        if user.role == 'provider' or self.request.user.is_staff:
             return ParkingFacility.objects.filter(provider=user)
         return ParkingFacility.objects.all()
+
+class ParkingSpotPollingView(APIView):
+    def get(self, request):
+        spots = ParkingSpot.objects.all()
+        serializer = ParkingSpotSerializer(spots, many=True)
+        return Response(serializer.data)
 
 class NearbyParkingSpotsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -61,7 +67,7 @@ class NearbyParkingSpotsView(APIView):
         spots = ParkingSpot.objects.filter(is_available=True)
         nearby_spots = [
             spot for spot in spots
-            if calculate_distance(lat, lng, float(spot.latitude), float(spot.longitude)) <= radius_km
+            if calculates_distance(lat, lng, float(spot.latitude), float(spot.longitude)) <= radius_km
         ]
         serializer = ParkingSpotSerializer(nearby_spots, many=True)
         return Response(serializer.data)
@@ -98,8 +104,7 @@ class NearbyPredictionsView(APIView):
 
             candidate_list = []
             for s in candidates:
-                from .views import calculate_distance
-                dist = calculate_distance(lat, lng, float(s.latitude), float(s.longitude))
+                dist = calculates_distance(lat, lng, float(s.latitude), float(s.longitude))
                 if dist <= radius_km:
                     candidate_list.append(s)
 
@@ -186,9 +191,3 @@ class SpotAvailabilityLogListView(generics.ListAPIView):
     serializer_class = SpotAvailabilityLogSerializer
     permission_classes = [permissions.IsAdminUser]
 
-
-class ParkingSpotPollingView(APIView):
-    def get(self, request):
-        spots = ParkingSpot.objects.all()
-        serializer = ParkingSpotSerializer(spots, many=True)
-        return Response(serializer.data)
