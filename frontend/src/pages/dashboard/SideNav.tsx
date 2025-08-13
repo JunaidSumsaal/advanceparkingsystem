@@ -1,0 +1,169 @@
+import {
+  Box,
+  CloseButton,
+  Flex,
+  Icon,
+  useColorModeValue,
+  Text,
+  Drawer,
+  DrawerContent,
+  useDisclosure,
+  BoxProps,
+  IconButton,
+  Image,
+} from "@chakra-ui/react";
+import {
+  BarChart3,
+  LayoutDashboard,
+  CreditCard,
+} from "lucide-react";
+import { IconType } from "react-icons";
+import { useState } from "react";
+import { FiHome } from "react-icons/fi";
+import Logo from '@assets/header_logo.png';
+import { Link as RouterLink } from 'react-router-dom';
+
+interface SidebarProps extends BoxProps {
+  onClose: () => void;
+}
+
+const LinkItems: Array<{ name: string; icon: IconType; path: string }> = [
+  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+  { name: "Expenses", icon: CreditCard, path: "/dashboard/expenses" },
+];
+
+
+const SidebarContent = ({
+  onClose,
+  activeLink,
+  onLinkClick,
+  ...rest
+}: SidebarProps & {
+  activeLink: string;
+  onLinkClick: (name: string) => void;
+}) => {
+  return (
+    <Box
+      transition="3s ease"
+      bg={useColorModeValue("white", "gray.900")}
+      borderRight="1px"
+      borderRightColor={useColorModeValue("gray.200", "gray.700")}
+      w={{ base: "full", md: 60 }}
+      pos="fixed"
+      top={0}
+      h="full"
+      zIndex={10}
+      {...rest}
+    >
+      <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+        <Text as="h2" fontSize="xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.300'}>
+          <Image src={Logo} alt='SmartSpend' h='30px' />
+          SmartSpend
+        </Text>
+        <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
+      </Flex>
+      {LinkItems.map((link) => (
+        <NavItem
+          key={link.name}
+          icon={link.icon}
+          to={link.path}
+          isActive={activeLink === link.name}
+          onClick={() => onLinkClick(link.name)}
+        >
+          {link.name}
+        </NavItem>
+      ))}
+    </Box>
+  );
+};
+
+const NavItem = ({
+  icon,
+  children,
+  isActive,
+  to,
+  onClick,
+  ...rest
+}: {
+  icon: IconType;
+  children: React.ReactNode;
+  isActive: boolean;
+  to: string;
+  onClick: () => void;
+}) => {
+  return (
+    <Box as={RouterLink} to={to} onClick={onClick} _hover={{ textDecoration: 'none' }}>
+      <Flex
+        align="center"
+        p="4"
+        mx="4"
+        my="1"
+        borderRadius="lg"
+        role="group"
+        cursor="pointer"
+        _hover={{ bg: "primary.400", color: "white" }}
+        bg={isActive ? "primary.400" : "transparent"}
+        color={isActive ? "white" : "inherit"}
+        {...rest}
+      >
+        {icon && (
+          <Icon
+            mr="4"
+            fontSize="16"
+            _groupHover={{ color: "white" }}
+            as={icon}
+          />
+        )}
+        {children}
+      </Flex>
+    </Box>
+  );
+};
+
+
+const Sidebar = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [activeLink, setActiveLink] = useState<string>("Home");
+
+  const handleLinkClick = (name: string) => {
+    setActiveLink(name);
+    onClose();
+  };
+
+  return (
+    <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
+      {/* For Desktop View */}
+      <SidebarContent
+        activeLink={activeLink}
+        onLinkClick={handleLinkClick}
+        onClose={onClose}
+        display={{ base: "none", md: "block" }}
+      />
+
+      {/* Button to Open Sidebar on Mobile View */}
+      <IconButton
+        display={{ base: "flex", md: "none" }}
+        aria-label="Open Sidebar"
+        icon={<FiHome />}
+        onClick={onOpen}
+        position="fixed"
+        top="4"
+        left="4"
+      />
+
+      {/* Drawer for Mobile View */}
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose} size="full">
+        <DrawerContent>
+          <SidebarContent
+            activeLink={activeLink}
+            onLinkClick={handleLinkClick}
+            onClose={onClose}
+          />
+        </DrawerContent>
+      </Drawer>
+    </Box>
+  );
+};
+
+export default Sidebar;
