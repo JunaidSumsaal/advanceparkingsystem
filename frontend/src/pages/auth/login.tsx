@@ -21,9 +21,9 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import Cookies from 'js-cookie';
-import Logo from '@assets/header_logo.png';
-import { login as loginService } from '@services/authService';
-import { useAuth } from '@context/AuthContext';
+import Logo from '../../assets/header_logo.png';
+import { login as loginService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);

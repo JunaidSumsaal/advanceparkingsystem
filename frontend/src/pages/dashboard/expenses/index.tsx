@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Plus, Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
-import MetricsCards from '@components/dashboard/MetricsCards';
-import ExpenseTrend from '@components/charts/ExpenseTrend';
-import CategoryBreakdown from '@components/charts/CategoryBreakdown';
-import RecentExpenses from '@components/dashboard/RecentExpenses';
 import { Box, Button, useDisclosure, useToast } from '@chakra-ui/react';
-import CreateExpenseModal from '@components/modals/CreateExpenseModal';
-import CreateBudgetModal from '@components/modals/CreateBudgetModal';
-import { downloadReport } from '@services/reportService';
-import { getExpenses } from "@services/expenseService";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import MetricsCards from '../../../components/dashboard/MetricsCards';
+import ExpenseTrend from '../../../components/charts/ExpenseTrend';
+import CategoryBreakdown from '../../../components/charts/CategoryBreakdown';
+import RecentExpenses from '../../../components/dashboard/RecentExpenses';
+import CreateExpenseModal from '../../../components/modals/CreateExpenseModal';
+import CreateBudgetModal from '../../../components/modals/CreateBudgetModal';
+import { downloadReport } from '../../../services/reportService';
+import { getExpenses } from "../../../services/expenseService";
 
 const Expenses = () => {
   const { isOpen: isExpenseOpen, onOpen: onExpenseOpen, onClose: onExpenseClose } = useDisclosure();

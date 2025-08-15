@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def compute_mvp_probability(spot, lookback_entries=200):
+def compute_probability(spot, lookback_entries=200):
     """
         Simple heuristic:
             - Use recent availability history (last N logs) to compute availability ratio.
@@ -43,7 +43,7 @@ def predict_spots_nearby(spots, time_ahead_minutes=15):
     predicted_for = timezone.now() + timedelta(minutes=time_ahead_minutes)
 
     for spot in spots:
-        p = compute_mvp_probability(spot)
+        p = compute_probability(spot)
         try:
             SpotPredictionLog.objects.create(
                 parking_spot=spot,

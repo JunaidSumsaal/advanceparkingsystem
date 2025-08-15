@@ -11,8 +11,8 @@ import {
   Box,
   useToast
 } from '@chakra-ui/react';
-import Logo from '@assets/header_logo.png';
-import { forgotPassword } from '@services/authService';
+import Logo from '../../assets/header_logo.png';
+import { forgotPassword } from '../../services/authService';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

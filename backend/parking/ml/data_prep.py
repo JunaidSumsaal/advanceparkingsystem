@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
-from django.utils import timezone
 from parking.models import SpotAvailabilityLog, ParkingSpot, Booking
 from datetime import timedelta
 
-HORIZON_MIN = 15  # predict free in 15 minutes
+HORIZON_MIN = 15
 LOOKBACK_SECONDS = 60 * 60
 
 def load_logs_for_spot(spot_id):

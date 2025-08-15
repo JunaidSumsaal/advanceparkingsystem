@@ -13,8 +13,8 @@ import {
   Box,
 } from '@chakra-ui/react';
 import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
-import Logo from '@assets/header_logo.png';
-import { resetPassword } from '@services/authService';
+import Logo from '../../assets/header_logo.png';
+import { resetPassword } from '../../services/authService';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();

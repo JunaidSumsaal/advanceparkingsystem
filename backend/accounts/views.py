@@ -15,6 +15,7 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
+
 class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -34,10 +35,13 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             qs = qs.filter(role=role_filter)
 
         user = self.request.user
-        if user.role == 'provider' or user.is_staff:
+        if user.role == 'provider':
             facility_ids = ParkingFacility.objects.filter(provider=user).values_list('id', flat=True)
             qs = qs.filter(assigned_facilities__id__in=facility_ids).distinct()
-
+        if user.role == 'attendant':
+            qs = qs.filter(assigned_facilities__attendants=user).distinct()
+        if user.is_staff:
+            qs = qs.all()
         return qs
 
     def perform_destroy(self, instance):
@@ -46,6 +50,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You cannot delete users outside your facilities.")
         instance.delete()
 
+
 class AddAttendantView(generics.CreateAPIView):
     serializer_class = AdminUserSerializer
     permission_classes = [IsAdminOrFacilityProvider]
@@ -53,8 +58,6 @@ class AddAttendantView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = self.request.user
         attendant = serializer.save(role='attendant')
-
-        # If provider, assign attendant to their facilities
         if user.role == 'provider':
             facilities = ParkingFacility.objects.filter(provider=user)
             for facility in facilities:
@@ -63,10 +66,10 @@ class AddAttendantView(generics.CreateAPIView):
 
 class FacilityAttendantManageView(APIView):
     """
-    Manage attendants for a specific facility.
-    GET: List attendants
-    POST: Assign attendants
-    DELETE: Remove attendants
+        Manage attendants for a specific facility.
+        GET: List attendants
+        POST: Assign attendants
+        DELETE: Remove attendants
     """
     permission_classes = [IsAdminOrFacilityProvider]
 
@@ -84,18 +87,19 @@ class FacilityAttendantManageView(APIView):
         return Response(data)
 
     def post(self, request, facility_id):
-        """Assign attendants to facility."""
         facility = self.get_facility(request, facility_id)
-        attendant_ids = request.data.get('attendant_ids', [])
 
-        # Filter only attendants
-        attendants = User.objects.filter(id__in=attendant_ids, role='attendant')
+        ids = request.data.get('attendant_ids') or request.data.get('attendant_id')
+        if not ids:
+            return Response({"detail": "No attendant IDs provided."}, status=400)
 
-        # Avoid duplicates
+        if isinstance(ids, int):
+            ids = [ids]
+
+        attendants = User.objects.filter(id__in=ids, role='attendant')
         new_attendants = [a for a in attendants if a not in facility.attendants.all()]
         facility.attendants.add(*new_attendants)
 
-        # Log actions
         for a in new_attendants:
             AttendantAssignmentLog.objects.create(
                 facility=facility,
@@ -103,18 +107,23 @@ class FacilityAttendantManageView(APIView):
                 performed_by=request.user,
                 action='assigned'
             )
-
         return Response({"detail": f"Assigned {len(new_attendants)} attendant(s) to {facility.name}."})
 
     def delete(self, request, facility_id):
         """Remove attendants from facility."""
         facility = self.get_facility(request, facility_id)
-        attendant_ids = request.data.get('attendant_ids', [])
-        attendants = User.objects.filter(id__in=attendant_ids, role='attendant')
+
+        ids = request.data.get('attendant_ids') or request.data.get('attendant_id')
+        if not ids:
+            return Response({"detail": "No attendant IDs provided."}, status=400)
+
+        if isinstance(ids, int):
+            ids = [ids]  # normalize to list
+
+        attendants = User.objects.filter(id__in=ids, role='attendant')
 
         facility.attendants.remove(*attendants)
 
-        # Log actions
         for a in attendants:
             AttendantAssignmentLog.objects.create(
                 facility=facility,
@@ -124,6 +133,7 @@ class FacilityAttendantManageView(APIView):
             )
 
         return Response({"detail": f"Removed {attendants.count()} attendant(s) from {facility.name}."})
+
 
 
 class ChangePasswordView(generics.UpdateAPIView):

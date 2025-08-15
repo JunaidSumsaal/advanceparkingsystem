@@ -20,7 +20,7 @@ import {
 import { IconType } from "react-icons";
 import { useState } from "react";
 import { FiHome } from "react-icons/fi";
-import Logo from '@assets/header_logo.png';
+import Logo from '../../assets/header_logo.png';
 import { Link as RouterLink } from 'react-router-dom';
 
 interface SidebarProps extends BoxProps {

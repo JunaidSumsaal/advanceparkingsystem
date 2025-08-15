@@ -35,7 +35,7 @@ def notify_spot_available(spot):
     for sub in subscriptions:
         send_push_notification(sub, "Spot Available", f"{spot.name} is now free")
 
-def calculates_distance(lat1, lon1, lat2, lon2):
+def calculate_distance(lat1, lon1, lat2, lon2):
     # Haversine formula
     R = 6371.0
     dlat = radians(lat2 - lat1)

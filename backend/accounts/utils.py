@@ -34,3 +34,7 @@ class IsAdminOrSuperuser(BasePermission):
         return request.user.is_authenticated and (
             request.user.role in ['admin', 'superuser']
         )
+
+class IsAttendantOrDriver(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in ['attendant', 'driver']

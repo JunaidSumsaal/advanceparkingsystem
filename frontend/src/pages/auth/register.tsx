@@ -21,9 +21,9 @@ import {
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import Logo from '@assets/header_logo.png';
-import { register as registerService } from '@services/authService';
-import { useAuth } from '@context/AuthContext';
+import Logo from '../../assets/header_logo.png';
+import { register as registerService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);

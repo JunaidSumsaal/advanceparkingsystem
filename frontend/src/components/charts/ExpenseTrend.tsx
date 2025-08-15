@@ -10,7 +10,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@components/ui/chart";
+} from "../ui/chart";
 
 interface ExpenseTrendProps {
   data: Array<{ day: number; amount: number }>;

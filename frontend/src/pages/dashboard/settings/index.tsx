@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Input, FormControl, FormLabel, VStack, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { updateProfile } from '@services/authService';
-import { useAuth } from '@context/AuthContext';
+import { updateProfile } from '../../../services/authService';
+import { useAuth } from '../../../context/AuthContext';
 
 const Settings = () => {
   const { user } = useAuth();

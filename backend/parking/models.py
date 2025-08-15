@@ -5,11 +5,14 @@ from parking.utils import notify_spot_available
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
+class SoftDeleteManager(models.Manager):
+    """Custom manager to exclude deleted records by default."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
 class ParkingFacility(models.Model):
-    """
-    Represents a provider's parking facility.
-    Groups multiple spots & attendants under one location.
-    """
     provider = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -17,7 +20,7 @@ class ParkingFacility(models.Model):
         limit_choices_to={"role": "provider"}
     )
     name = models.CharField(max_length=255)
-    capacity = models.IntegerField(blank=True, null=True)
+    capacity = models.IntegerField(blank=True, null=True, default=0)
     latitude = models.DecimalField(
         max_digits=9, decimal_places=6,
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
@@ -34,6 +37,14 @@ class ParkingFacility(models.Model):
         limit_choices_to={"role": "attendant"}
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_deleted = True
+        self.save()
 
     def __str__(self):
         provider_name = getattr(self.provider, 'username', 'Unknown')
@@ -43,26 +54,6 @@ class ParkingFacility(models.Model):
         indexes = [
             models.Index(fields=['latitude', 'longitude'])
         ]
-
-
-class AttendantAssignmentLog(models.Model):
-    ACTION_CHOICES = [
-        ('assigned', 'Assigned'),
-        ('removed', 'Removed'),
-    ]
-
-    facility = models.ForeignKey(ParkingFacility, on_delete=models.CASCADE, related_name='attendant_logs')
-    attendant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attendant_logs')
-    performed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                     null=True, related_name='attendant_actions')
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-timestamp']
-
-    def __str__(self):
-        return f"{self.performed_by} {self.action} {self.attendant} at {self.facility}"
 
 
 class ParkingSpot(models.Model):
@@ -90,6 +81,7 @@ class ParkingSpot(models.Model):
     spot_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='public')
     price_per_hour = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     is_available = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
 
     provider = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -104,6 +96,13 @@ class ParkingSpot(models.Model):
         related_name="created_spots"
     )
 
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_deleted = True
+        self.save()
+
     def __str__(self):
         return f"{self.name} ({self.spot_type})"
 
@@ -111,6 +110,27 @@ class ParkingSpot(models.Model):
         indexes = [
             models.Index(fields=['is_available']),
         ]
+
+
+class AttendantAssignmentLog(models.Model):
+    ACTION_CHOICES = [
+        ('assigned', 'Assigned'),
+        ('removed', 'Removed'),
+    ]
+
+    facility = models.ForeignKey(ParkingFacility, on_delete=models.CASCADE, related_name='attendant_logs')
+    attendant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attendant_logs')
+    performed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                    null=True, related_name='attendant_actions')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.performed_by} {self.action} {self.attendant} at {self.facility}"
+
 
 class Booking(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -186,3 +206,13 @@ class SpotPredictionLog(models.Model):
 
     def __str__(self):
         return f"Pred for {self.parking_spot.id} @ {self.predicted_for_time} p={self.probability:.2f}"
+
+
+class ModelEvaluationLog(models.Model):
+    auc_score = models.FloatField()
+    brier_score = models.FloatField()
+    tolerance_seconds = models.IntegerField(default=120)
+    evaluated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Eval @ {self.evaluated_at:%Y-%m-%d %H:%M} | AUC={self.auc_score:.3f} Brier={self.brier_score:.3f}"

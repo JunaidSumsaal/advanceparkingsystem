@@ -1,4 +1,4 @@
-import { getMe } from '@services/authService';
+import { getMe } from '../services/authService';
 
 export const isAuthenticated = async (): Promise<boolean> => {
   try {

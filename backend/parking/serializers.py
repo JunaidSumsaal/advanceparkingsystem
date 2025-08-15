@@ -31,13 +31,17 @@ class SpotPredictionSerializer(serializers.Serializer):
     predicted_for_time = serializers.DateTimeField()
 
 class ParkingFacilitySerializer(serializers.ModelSerializer):
+    provider = serializers.ReadOnlyField(source='provider.username')
+
     class Meta:
         model = ParkingFacility
-        fields = ['id', 'name', 'latitude', 'longitude', 'address']
+        fields = [
+            'id', 'provider', 'name', 'capacity', 'latitude', 'longitude',
+            'address', 'attendants', 'created_at', 'is_deleted'
+        ]
+        read_only_fields = ['id', 'provider', 'created_at', 'is_deleted']
 
-    def create(self, validated_data):
-        request = self.context['request']
-        return ParkingFacility.objects.create(
-            provider=request.user,
-            **validated_data
-        )
+    def validate_capacity(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("Capacity cannot be negative.")
+        return value

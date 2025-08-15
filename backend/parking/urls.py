@@ -1,13 +1,20 @@
 from django.urls import path
-from .views import (
-    NearbyPredictionsView, ParkingSpotListCreateView, NearbyParkingSpotsView, BookParkingSpotView,
-    NavigateToSpotView, SpotReviewCreateView, SpotAvailabilityLogListView
-)
 from rest_framework.routers import DefaultRouter
-from .views import BookingViewSet
+from .views import (
+    NearbyPredictionsView,
+    ParkingSpotListCreateView,
+    NearbyParkingSpotsView,
+    BookParkingSpotView,
+    NavigateToSpotView,
+    SpotReviewCreateView,
+    SpotAvailabilityLogListView,
+    ParkingFacilityView,
+    BookingViewSet,
+)
 
 router = DefaultRouter()
 router.register(r'bookings', BookingViewSet, basename='booking')
+router.register(r'facilities', ParkingFacilityView, basename='facility')
 
 urlpatterns = [
     path('spots/', ParkingSpotListCreateView.as_view(), name='parking_spots'),

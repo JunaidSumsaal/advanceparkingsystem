@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
-import { Progress } from "@components/ui/progress";
-import { getExpenses } from "@services/expenseService";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Progress } from "../ui/progress";
+import { getExpenses } from "../../services/expenseService";
 import { Text } from "@chakra-ui/react";
 
 const MetricsCards = () => {

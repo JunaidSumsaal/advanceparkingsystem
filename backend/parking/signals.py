@@ -1,10 +1,41 @@
-from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from .models import ParkingSpot
-from .utils import calculates_distance, send_websocket_update
-from .models import ParkingSpot
-from notifications.utils import send_push_notification, log_notification_event, send_spot_available_notification
+from django.db.models.signals import post_save, pre_delete, pre_save
+from .utils import calculate_distance, send_websocket_update
+from .models import ParkingSpot, SpotAvailabilityLog
 from notifications.models import PushSubscription
+from notifications.utils import send_push_notification, log_notification_event, send_spot_available_notification
+
+
+@receiver(post_save, sender=ParkingSpot)
+def update_facility_capacity_on_create(sender, instance, created, **kwargs):
+    """Update facility capacity when a new spot is created."""
+    if created and instance.facility:
+        facility = instance.facility
+        facility.capacity = facility.spots.filter(is_deleted=False).count()
+        facility.save()
+
+
+@receiver(pre_delete, sender=ParkingSpot)
+def update_facility_capacity_on_delete(sender, instance, **kwargs):
+    """Update facility capacity when a spot is deleted."""
+    if instance.facility:
+        facility = instance.facility
+        facility.capacity = facility.spots.filter(is_deleted=False).exclude(id=instance.id).count()
+        facility.save()
+
+
+@receiver(pre_save, sender=ParkingSpot)
+def create_availability_log(sender, instance, **kwargs):
+    """Create a SpotAvailabilityLog whenever availability changes."""
+    if not instance.pk:
+        return
+    old_instance = ParkingSpot.objects.get(pk=instance.pk)
+    if old_instance.is_available != instance.is_available:
+        SpotAvailabilityLog.objects.create(
+            parking_spot=instance,
+            is_available=instance.is_available,
+            changed_by=getattr(instance, '_changed_by', None)
+        )
 
 @receiver(pre_save, sender=ParkingSpot)
 def spot_availability_change(sender, instance, **kwargs):
@@ -17,7 +48,7 @@ def spot_availability_change(sender, instance, **kwargs):
         for sub in subscriptions:
             user_profile = getattr(sub.user, "profile", None)
             if user_profile:
-                distance = calculates_distance(
+                distance = calculate_distance(
                     float(instance.latitude),
                     float(instance.longitude),
                     float(user_profile.latitude),

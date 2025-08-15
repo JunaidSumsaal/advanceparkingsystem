@@ -6,7 +6,7 @@ import {
   Heading
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import Logo from '@assets/header_logo.png';
+import Logo from '../../assets/header_logo.png';
 import { keyframes } from '@emotion/react';
 
 const animationKeyframes = keyframes`

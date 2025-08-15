@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
-import { getExpenses } from "@services/expenseService";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { getExpenses } from "../../services/expenseService";
 import { useEffect, useState } from "react";
 import { Spinner } from "@chakra-ui/react";
 

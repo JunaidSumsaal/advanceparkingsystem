@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getAnalyticsOverview, getExpenseTrends, getCategoryBreakdown, getRecentExpenses, getfetchSuggestions } from '@services/dashboardService';
-import { Box, Card, CardBody, CardHeader, Text, Spinner, Center, useToast } from "@chakra-ui/react";
-import { Progress } from "@components/ui/progress";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import Pagination from '@components/dashboard/pagination';
+import { Box, Card, CardBody, CardHeader, Text, Spinner, Center, useToast } from "@chakra-ui/react";
+import { getAnalyticsOverview, getExpenseTrends, getCategoryBreakdown, getRecentExpenses, getfetchSuggestions } from '../../../services/dashboardService';
+import { Progress } from "../../../components/ui/progress";
+import Pagination from '../../../components/dashboard/pagination';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 

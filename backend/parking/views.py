@@ -1,10 +1,12 @@
 import math
 from rest_framework import generics, permissions, viewsets, status
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from math import radians
-from accounts.utils import IsProviderOrAdmin
-from parking.utils import calculates_distance
+from accounts.utils import IsProviderOrAdmin, IsAdminOrSuperuser, IsAttendantOrDriver, IsAdminOrFacilityProvider
+from parking.utils import calculate_distance
 from .models import ParkingFacility, ParkingSpot, Booking, SpotAvailabilityLog
 from .serializers import (
     ParkingFacilitySerializer, ParkingSpotSerializer, BookingSerializer,
@@ -19,33 +21,37 @@ from core.metrics import (
 def update_available_spots_metric():
     ACTIVE_AVAILABLE_SPOTS.set(ParkingSpot.objects.filter(is_available=True).count())
 
-class ParkingSpotListCreateView(generics.ListCreateAPIView):
-    queryset = ParkingSpot.objects.all()
-    serializer_class = ParkingSpotSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        if self.request.user.role != 'provider' and not self.request.user.is_staff:
-            return Response({"error": "Only providers or admins can add spots."}, status=403)
-        spot = serializer.save(provider=self.request.user)
-        SpotAvailabilityLog.objects.create(parking_spot=spot, is_available=spot.is_available)
-
-
-class ParkingFacilityCreateView(generics.ListCreateAPIView):
+class ParkingFacilityView(viewsets.ModelViewSet):
     serializer_class = ParkingFacilitySerializer
-    permission_classes = [IsProviderOrAdmin]
+    permission_classes = [IsProviderOrAdmin, IsAdminOrFacilityProvider]
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'provider' or self.request.user.is_staff:
-            return ParkingFacility.objects.filter(provider=user)
-        return ParkingFacility.objects.all()
+        qs = ParkingFacility.objects.all()
+        if not (user.role == 'provider' or user.is_staff):
+            raise PermissionDenied("Only providers or admins can view facilities.")
+        if user.role == 'provider':
+            qs = qs.filter(provider=user)
+        return qs
 
-class ParkingSpotPollingView(APIView):
-    def get(self, request):
-        spots = ParkingSpot.objects.all()
-        serializer = ParkingSpotSerializer(spots, many=True)
-        return Response(serializer.data)
+    def perform_create(self, serializer):
+        if self.request.user.role != 'provider' and not self.request.user.is_staff:
+            raise PermissionDenied("Only providers or admins can create facilities.")
+        serializer.save(provider=self.request.user)
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+class ParkingSpotListCreateView(generics.ListCreateAPIView):
+    queryset = ParkingSpot.objects.all()
+    serializer_class = ParkingSpotSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsProviderOrAdmin]
+
+    def perform_create(self, serializer):
+        if self.request.user.role != 'provider' and not self.request.user.is_staff:
+            raise PermissionDenied("Only providers or admins can add spots.")
+        spot = serializer.save(provider=self.request.user)
+        SpotAvailabilityLog.objects.create(parking_spot=spot, is_available=spot.is_available)
 
 class NearbyParkingSpotsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -67,15 +73,13 @@ class NearbyParkingSpotsView(APIView):
         spots = ParkingSpot.objects.filter(is_available=True)
         nearby_spots = [
             spot for spot in spots
-            if calculates_distance(lat, lng, float(spot.latitude), float(spot.longitude)) <= radius_km
+            if calculate_distance(lat, lng, float(spot.latitude), float(spot.longitude)) <= radius_km
         ]
         serializer = ParkingSpotSerializer(nearby_spots, many=True)
         return Response(serializer.data)
 
-
 class NearbyPredictionsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
     def get(self, request):
         PREDICTION_REQUESTS.inc()
         with PREDICTION_LATENCY.time():
@@ -83,7 +87,6 @@ class NearbyPredictionsView(APIView):
             lng = request.query_params.get('lng')
             radius_km = float(request.query_params.get('radius', getattr(request.user, 'default_radius_km', 2)))
             time_ahead = int(request.query_params.get('time_ahead', 15))
-
             if not lat or not lng:
                 return Response({"error": "lat and lng are required"}, status=status.HTTP_400_BAD_REQUEST)
             try:
@@ -91,25 +94,21 @@ class NearbyPredictionsView(APIView):
                 lng = float(lng)
             except ValueError:
                 return Response({"error": "invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
-
-            lat_delta = radius_km / 111.0  # ~1 deg lat ~= 111 km
+            lat_delta = radius_km / 111.0
             lng_delta = radius_km / (111.0 * abs(math.cos(radians(lat))) or 1.0)
-
             candidates = ParkingSpot.objects.filter(
+                is_available=True,
                 latitude__gte=lat - lat_delta,
                 latitude__lte=lat + lat_delta,
                 longitude__gte=lng - lng_delta,
                 longitude__lte=lng + lng_delta,
             )
-
             candidate_list = []
             for s in candidates:
-                dist = calculates_distance(lat, lng, float(s.latitude), float(s.longitude))
+                dist = calculate_distance(lat, lng, float(s.latitude), float(s.longitude))
                 if dist <= radius_km:
                     candidate_list.append(s)
-
             predictions = predict_spots_nearby(candidate_list, time_ahead_minutes=time_ahead)
-
             response_data = []
             for p in predictions:
                 spot = p['spot']
@@ -121,11 +120,9 @@ class NearbyPredictionsView(APIView):
                     "probability": round(p['probability'], 3),
                     "predicted_for_time": p['predicted_for_time']
                 })
-
             serializer = SpotPredictionSerializer(response_data, many=True)
             PREDICTION_SAVED.inc(len(response_data))
             return Response(serializer.data)
-
 
 class BookParkingSpotView(generics.CreateAPIView):
     serializer_class = BookingSerializer
@@ -133,9 +130,13 @@ class BookParkingSpotView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         BOOKING_CREATED.inc()
+        spot = serializer.validated_data['parking_spot']
+        if spot.provider == self.request.user:
+            raise PermissionDenied("You cannot book your own spot.")
+        if not spot.is_available:
+            raise PermissionDenied("Spot is not available.")
         serializer.save(user=self.request.user)
         update_available_spots_metric()
-
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
@@ -154,6 +155,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         spot.save()
         return Response(BookingSerializer(booking).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post'])
     def end_booking(self, request, pk=None):
         try:
             booking = Booking.objects.get(pk=pk, user=request.user, is_active=True)
@@ -177,7 +179,6 @@ class NavigateToSpotView(APIView):
         SPOT_SELECTED.inc()
         return Response({"navigation_url": maps_url})
 
-
 class SpotReviewCreateView(generics.CreateAPIView):
     serializer_class = SpotReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -185,9 +186,7 @@ class SpotReviewCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-
 class SpotAvailabilityLogListView(generics.ListAPIView):
     queryset = SpotAvailabilityLog.objects.all()
     serializer_class = SpotAvailabilityLogSerializer
     permission_classes = [permissions.IsAdminUser]
-

@@ -19,9 +19,9 @@ Link as ChakraLink,
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import Logo from '@assets/header_logo.png';
+import Logo from '../../assets/header_logo.png';
 import { FiMenu, FiChevronDown } from 'react-icons/fi';
-import { useAuth } from '@context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Header = () => {

@@ -1,7 +1,6 @@
 import api from './api';
-import { User } from '@types/User';
-import { AUTH } from '@services/constants';
-import { ADMIN } from './constants';
+import { User } from '../types/User';
+import { AUTH, ADMIN } from './constants';
 
 interface Credentials {
   email: string;

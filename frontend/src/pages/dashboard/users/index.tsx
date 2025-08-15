@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Tooltip, useDisclosure, Text } from '@chakra-ui/react';
-import { useAuth } from '@context/AuthContext';
-import { User } from '@types/Users';
-import Pagination from '@components/dashboard/pagination';
+import { useAuth } from '../../../context/AuthContext';
+import type { User } from '../../../types/User';
+import Pagination from '../../../components/dashboard/pagination';
 
 const Users = () => {
   const { users, totalUsers, currentPage, totalPages, setCurrentPage } = useAuth();

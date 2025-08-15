@@ -1,27 +1,28 @@
 import { Suspense, lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
-import { Error404 } from "@components/404";
+import { Error404 } from "../components/404";
 import { ProtectedRoute } from "./protected-route";
-import { Loading } from "@components/loader";
+import Loader from "../components/loader/loaders";
+import LoaderDash from "../components/loader/loaders-dashboard";
 
-const LandingPage = lazy(() => import("@pages/landingpage/landingpage"));
-const Login = lazy(() => import("@pages/auth/login"));
-const Register = lazy(() => import("@pages/auth/register"));
-const RestEmail = lazy(() => import("@pages/auth/reset-email"));
-const ResetPassword = lazy(() => import("@pages/auth/reset-password"));
-const VerifyEmail = lazy(() => import("@pages/auth/verify-email"));
-const Dashboard = lazy(() => import("@pages/dashboard/Layout"));
-const Overview = lazy(() => import("@pages/dashboard/overview"));
-const Analytics = lazy(() => import("@pages/dashboard/analytics"));
-const Expenses = lazy(() => import("@pages/dashboard/expenses"));
-const Settings = lazy(() => import("@pages/dashboard/settings"));
-const Users = lazy(() => import("@pages/dashboard/users"));
+const LandingPage = lazy(() => import("../pages/landingpage/landingpage"));
+const Login = lazy(() => import("../pages/auth/login"));
+const Register = lazy(() => import("../pages/auth/register"));
+const RestEmail = lazy(() => import("../pages/auth/reset-email"));
+const ResetPassword = lazy(() => import("../pages/auth/reset-password"));
+const VerifyEmail = lazy(() => import("../pages/auth/verify-email"));
+const Dashboard = lazy(() => import("../pages/dashboard/Layout"));
+const Overview = lazy(() => import("../pages/dashboard/overview"));
+const Analytics = lazy(() => import("../pages/dashboard/analytics"));
+const Expenses = lazy(() => import("../pages/dashboard/expenses"));
+const Settings = lazy(() => import("../pages/dashboard/settings"));
+const Users = lazy(() => import("../pages/dashboard/users"));
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loader />}>
         <LandingPage />
       </Suspense>
     ),
@@ -30,7 +31,7 @@ export const router = createBrowserRouter([
   {
     path: "login",
     element: (
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loader />}>
         <Login />
       </Suspense>
     ),
@@ -39,7 +40,7 @@ export const router = createBrowserRouter([
   {
     path: "register",
     element: (
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loader />}>
         <Register />
       </Suspense>
     ),
@@ -47,7 +48,7 @@ export const router = createBrowserRouter([
   {
     path: "reset-email",
     element: (
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loader />}>
         <RestEmail />
       </Suspense>
     ),
@@ -55,7 +56,7 @@ export const router = createBrowserRouter([
   {
     path: "reset-password",
     element: (
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loader />}>
         <ResetPassword />
       </Suspense>
     ),
@@ -63,7 +64,7 @@ export const router = createBrowserRouter([
   {
     path: "verify-email",
     element: (
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loader />}>
         <VerifyEmail />
       </Suspense>
     ),
@@ -76,7 +77,7 @@ export const router = createBrowserRouter([
     path: "dashboard",
     element: (
       <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<LoaderDash />}>
           <Dashboard />
         </Suspense>
       </ProtectedRoute>
@@ -85,7 +86,7 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<LoaderDash />}>
             <Overview />
           </Suspense>
         ),
@@ -93,7 +94,7 @@ export const router = createBrowserRouter([
       {
         path: "analytics",
         element: (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<LoaderDash />}>
             <Analytics />
           </Suspense>
         ),
@@ -101,7 +102,7 @@ export const router = createBrowserRouter([
       {
         path: "expenses",
         element: (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<LoaderDash />}>
             <Expenses />
           </Suspense>
         ),
@@ -109,7 +110,7 @@ export const router = createBrowserRouter([
       {
         path: "settings",
         element: (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<LoaderDash />}>
             <Settings />
           </Suspense>
         ),
@@ -117,7 +118,7 @@ export const router = createBrowserRouter([
       {
         path: "users",
         element: (
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<LoaderDash />}>
             <Users />
           </Suspense>
         ),

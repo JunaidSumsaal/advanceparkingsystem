@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import LoaderDash from '@components/loader/loaders-dashboard';
+import LoaderDash from '../components/loader/loaders-dashboard';
 import { useToast } from '@chakra-ui/react';
-import { isAuthenticated } from '@utils/auth';
+import { isAuthenticated } from '../utils/auth';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [authenticated, setAuthenticated] = useState(false);

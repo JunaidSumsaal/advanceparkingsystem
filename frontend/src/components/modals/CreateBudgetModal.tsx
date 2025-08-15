@@ -13,7 +13,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { createBudget } from "@services/budgetService";
+import { createBudget } from "../../services/budgetService";
 
 const CreateBudgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [formData, setFormData] = useState({
