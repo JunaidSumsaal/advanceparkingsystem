@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { User } from '@types/User';
-import { getMe, getUsers } from '@services/authService';
-import { AuthContextType } from '@types/context/auth';
+import { User } from '../types/User';
+import { getMe, getUsers } from '../services/authService';
+import { AuthContextType } from '../types/context/auth';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 

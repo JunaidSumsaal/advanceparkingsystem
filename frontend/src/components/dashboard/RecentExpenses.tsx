@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { getExpenses } from "../../services/expenseService";
 import { useEffect, useState } from "react";
@@ -37,7 +38,7 @@ const RecentExpenses = ({ refreshKey }: { refreshKey: number }) => {
           </div>
         ) : expenses.length > 0 ? (
           <div className="space-y-8">
-            {expenses.map((item, i) => (
+            {expenses.map((item) => (
               <div key={item._id} className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium leading-none">{item.category}</p>

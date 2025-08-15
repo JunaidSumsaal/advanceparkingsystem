@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { Plus, Download } from "lucide-react";
 import { Box, Button, useDisclosure, useToast } from '@chakra-ui/react';
@@ -12,8 +13,7 @@ import { downloadReport } from '../../../services/reportService';
 import { getExpenses } from "../../../services/expenseService";
 
 const Expenses = () => {
-  const { isOpen: isExpenseOpen, onOpen: onExpenseOpen, onClose: onExpenseClose } = useDisclosure();
-  const { isOpen: isBudgetOpen, onOpen: onBudgetOpen, onClose: onBudgetClose } = useDisclosure();
+  const {isOpen: isExpenseOpen, onOpen: onExpenseOpen, onClose: onExpenseClose, isOpen: isBudgetOpen, onOpen: onBudgetOpen, onClose: onBudgetClose} = useDisclosure();
   const toast = useToast();
   const [refreshKey, setRefreshKey] = useState(0);
   const [expenseInfo, setExpenseInfo] = useState<any[]>([]);
@@ -55,7 +55,7 @@ const Expenses = () => {
   
           // Aggregate expenses by category
           const categoryAggregation = res.data.reduce((acc: any, expense: any) => {
-            const category = expense.category;
+            const {category} = expense;
             if (!acc[category]) {
               acc[category] = 0;
             }

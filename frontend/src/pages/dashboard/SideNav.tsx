@@ -8,7 +8,6 @@ import {
   Drawer,
   DrawerContent,
   useDisclosure,
-  BoxProps,
   IconButton,
   Image,
 } from "@chakra-ui/react";
@@ -17,7 +16,8 @@ import {
   LayoutDashboard,
   CreditCard,
 } from "lucide-react";
-import { IconType } from "react-icons";
+import type { BoxProps} from "@chakra-ui/react";
+import { type IconType } from "react-icons";
 import { useState } from "react";
 import { FiHome } from "react-icons/fi";
 import Logo from '../../assets/header_logo.png';

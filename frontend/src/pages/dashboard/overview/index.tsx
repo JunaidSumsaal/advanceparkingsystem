@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Box, Card, CardBody, CardHeader, Text, Spinner, Center, useToast } from "@chakra-ui/react";
@@ -112,7 +113,7 @@ const Overview = () => {
     };
 
     fetchData();
-  }, [toast]);
+  }, [currentMonth, currentYear, suggestionsPage, toast]);
 
   if (loading) {
     return (
@@ -161,7 +162,7 @@ const Overview = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                 >
                   {categorySpending.map((_, idx) => (
                     <Cell key={idx} fill={COLORS[idx % COLORS.length]} />

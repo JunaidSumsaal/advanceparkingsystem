@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, Card, CardBody, CardHeader, Text, Spinner, Center, useToast } from "@chakra-ui/react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { getComparisonData, getTrendsData } from "../../../lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllservices/dashboardService";
+import { getComparisonData, getTrendsData } from "../../../services/dashboardService";
 
 const Analytics = () => {
   const [comparisonData, setComparisonData] = useState<any[]>([]);

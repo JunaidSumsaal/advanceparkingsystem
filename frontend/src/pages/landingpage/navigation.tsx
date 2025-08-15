@@ -21,8 +21,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@chakra-ui/icons';
-import Logo from '@assets/header_logo.png';
-import { isAuthenticated } from '@utils/auth';
+import Logo from '../../assets/header_logo.png';
+import { isAuthenticated } from '../../utils/auth';
 
 export default function Navigation() {
   const { isOpen, onToggle } = useDisclosure()

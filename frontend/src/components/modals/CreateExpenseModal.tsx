@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Button,
   Modal,
@@ -13,7 +14,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { createExpense } from "@services/expenseService";
+import { createExpense } from "../../services/expenseService";
 
 const CreateExpenseModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void }) => {
   const [formData, setFormData] = useState({

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Button,
   Modal,
@@ -15,7 +16,7 @@ import {
 import { useState } from "react";
 import { createBudget } from "../../services/budgetService";
 
-const CreateBudgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const CreateBudgetModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void }) => {
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
@@ -53,6 +54,7 @@ const CreateBudgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         duration: 3000,
         isClosable: true,
       });
+      onSuccess();
       onClose();
     } catch (error: any) {
       toast({

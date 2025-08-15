@@ -3,7 +3,6 @@ import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-
 import { cn } from "../../utils/utils"
 import { Button } from "../../components/ui/button"
 

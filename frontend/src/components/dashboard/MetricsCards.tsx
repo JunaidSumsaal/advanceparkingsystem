@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { getExpenses } from "../../services/expenseService";
 import { Text } from "@chakra-ui/react";
 
-const MetricsCards = () => {
+const MetricsCards = ({ refreshKey }: { refreshKey: number }) => {
   const [analytics, setAnalytics] = useState<any[]>([]);
 
   useEffect(() => {
@@ -23,7 +24,7 @@ const MetricsCards = () => {
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [refreshKey]);
 
   const totalAmount = analytics.reduce(
     (sum, item) => sum + (Number(item.amount) || 0),
@@ -31,7 +32,7 @@ const MetricsCards = () => {
   );
   const activeCategories = analytics.length;
 
-  const budgetUsedPercent = totalAmount ? (totalAmount / totalAmount) * 100 : 0;
+  const budgetUsedPercent = totalAmount ? (1) * 100 : 0;
   const budgetRemainingPercent = 100 - budgetUsedPercent;
 
   return (

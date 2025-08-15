@@ -15,7 +15,7 @@ import {
 import { ReactNode } from "react";
 import { FaInstagram, FaTwitter, FaYoutube } from "react-icons/fa";
 import { BiMailSend } from "react-icons/bi";
-import Logo from '@assets/header_logo.png';
+import Logo from '../../assets/header_logo.png';
 
 const SocialButton = ({
   children,

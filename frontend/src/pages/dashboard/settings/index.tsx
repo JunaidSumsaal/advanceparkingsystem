@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Button, Input, FormControl, FormLabel, VStack, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
@@ -24,10 +25,10 @@ const Settings = () => {
         position: 'top'
       });
       history('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error updating profile",
-        description: "Something went wrong while updating your profile.",
+        description: error.response?.data?.message || "Something went wrong while updating your profile.",
         status: "error",
         duration: 5000,
         isClosable: true,
