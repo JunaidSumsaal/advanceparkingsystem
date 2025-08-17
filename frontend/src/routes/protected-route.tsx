@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import LoaderDash from '../components/loader/loaders-dashboard';
@@ -15,10 +16,12 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setLoading(true);
         const authStatus = await isAuthenticated();
         setAuthenticated(authStatus);
-      } catch (err) {
+      } catch (err: { data: {
+        message: string
+      }}) {
         toast({
           title: 'Error',
-          description: 'An error occurred while checking for authentication.',
+          description: err.data.message || 'An error occurred while checking for authentication.',
           status: 'error',
           duration: 9000,
           isClosable: true,
