@@ -16,19 +16,18 @@ import {
   useColorModeValue,
   useToast,
   Image,
-  Link as ChakraLink
-} from '@chakra-ui/react';
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { Link, useNavigate } from 'react-router-dom';
-import Cookies from 'js-cookie';
-import Logo from '../../assets/header_logo.png';
-import { register as registerService } from '../../services/authService';
-import { useAuth } from '../../context/AuthContext';
+  Link as ChakraLink,
+} from "@chakra-ui/react";
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { Link, useNavigate } from "react-router-dom";
+import Logo from "../../assets/header_logo.png";
+import { register as registerService } from "../../services/authService";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [userData, setUserData] = useState({
-    name: "",
+    username: "",
     email: "",
     password: "",
     password_confirm: "",
@@ -51,7 +50,7 @@ export default function Register() {
         status: "error",
         duration: 3000,
         isClosable: true,
-        position: 'top'
+        position: "top",
       });
       return;
     }
@@ -59,22 +58,20 @@ export default function Register() {
     setLoading(true);
     try {
       const response = await registerService({
-        name: userData.name,
+        username: userData.username,
         email: userData.email,
         password: userData.password,
       });
 
-      if (response.accessToken && response.refreshToken) {
-        Cookies.set('refreshToken', response.refreshToken, { expires: 7 });
-        authLogin(response.accessToken);
-
+      if (response.access && response.refresh) {
+        authLogin(response.access, response.refresh);
         toast({
           title: "Registration successful!",
-          description: "Welcome to SmartSpend!",
+          description: "Welcome to APS!",
           status: "success",
           duration: 3000,
           isClosable: true,
-          position: "top"
+          position: "top",
         });
         navigate("/dashboard");
       } else {
@@ -84,7 +81,7 @@ export default function Register() {
           status: "error",
           duration: 3000,
           isClosable: true,
-          position: "top"
+          position: "top",
         });
       }
     } catch (error: any) {
@@ -94,7 +91,7 @@ export default function Register() {
         status: "error",
         duration: 3000,
         isClosable: true,
-        position: 'top'
+        position: "top",
       });
     } finally {
       setLoading(false);
@@ -111,7 +108,7 @@ export default function Register() {
       <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
         <Stack align={"center"}>
           <Box as={Link} to="/">
-            <Image src={Logo} alt='SmartSpend' h='60px' />
+            <Image src={Logo} alt="APS" h="60px" />
           </Box>
           <Heading fontSize={"4xl"} textAlign={"center"}>
             Sign up
@@ -130,13 +127,13 @@ export default function Register() {
             <Stack spacing={4}>
               <HStack>
                 <Box>
-                  <FormControl id="name" isRequired>
-                    <FormLabel>Full Name</FormLabel>
+                  <FormControl id="username" isRequired>
+                    <FormLabel>Username</FormLabel>
                     <Input
                       type="text"
                       focusBorderColor="primary.400"
                       onChange={handleChange}
-                      value={userData.name}
+                      value={userData.username}
                     />
                   </FormControl>
                 </Box>
@@ -213,7 +210,12 @@ export default function Register() {
           <Stack pt={6}>
             <Text align={"center"}>
               Already a user?{" "}
-              <ChakraLink as={Link} to="/login" color="primary.400" _hover={{ color: "primary.500" }}>
+              <ChakraLink
+                as={Link}
+                to="/login"
+                color="primary.400"
+                _hover={{ color: "primary.500" }}
+              >
                 Login
               </ChakraLink>
             </Text>
