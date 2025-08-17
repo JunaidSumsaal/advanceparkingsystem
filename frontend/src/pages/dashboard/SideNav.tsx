@@ -58,8 +58,8 @@ const SidebarContent = ({
     >
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
         <Text as="h2" fontSize="xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.300'}>
-          <Image src={Logo} alt='SmartSpend' h='30px' />
-          SmartSpend
+          <Image src={Logo} alt='APS' h='30px' />
+          APS
         </Text>
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
