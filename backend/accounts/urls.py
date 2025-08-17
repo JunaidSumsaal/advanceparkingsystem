@@ -2,11 +2,14 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
+    AuditLogListView,
     FacilityAttendantManageView,
     RegisterView,
     ProfileView,
     AddAttendantView,
-    AdminUserViewSet, ChangePasswordView, LogoutView
+    AdminUserViewSet,
+    ChangePasswordView,
+    LogoutView
 )
 
 router = DefaultRouter()
@@ -25,5 +28,6 @@ urlpatterns = [
         FacilityAttendantManageView.as_view(),
         name='facility-attendants-manage'
     ),
+    path("audit-logs/", AuditLogListView.as_view(), name="audit-logs"),
     path('', include(router.urls)),
 ]
