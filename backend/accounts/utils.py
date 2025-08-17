@@ -1,3 +1,4 @@
+from .models import AuditLog
 from rest_framework.permissions import BasePermission
 from rest_framework.pagination import PageNumberPagination
 from parking.models import ParkingFacility
@@ -42,3 +43,17 @@ class IsAdminOrSuperuser(BasePermission):
 class IsAttendantOrDriver(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['attendant', 'driver']
+
+def log_action(user, action, description="", request=None):
+    ip = None
+    agent = None
+    if request:
+        ip = request.META.get("REMOTE_ADDR")
+        agent = request.META.get("HTTP_USER_AGENT", "")
+    AuditLog.objects.create(
+        user=user if user.is_authenticated else None,
+        action=action,
+        description=description,
+        ip_address=ip,
+        user_agent=agent
+    )
