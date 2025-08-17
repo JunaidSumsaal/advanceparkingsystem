@@ -1,9 +1,10 @@
 import { getMe } from '../services/authService';
+import Cookie from 'js-cookie';
 
 export const isAuthenticated = async (): Promise<boolean> => {
   try {
   
-    const token = localStorage.getItem('token');
+    const token = Cookie.get('token');
     if (!token) {
       return false;
     }
