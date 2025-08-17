@@ -21,22 +21,22 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Logo from '../../assets/header_logo.png';
 import { FiMenu, FiChevronDown } from 'react-icons/fi';
-import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useAdminUsers } from '../../hooks/useAdminUsers';
 
 const Header = () => {
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
-  const [admin, setAdmin] = useState(false);
   const { onOpen } = useDisclosure();
   const toast = useToast();
   const { user, logout } = useAuth();
+  const { isAdmin } = useAdminUsers();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      setUserName(user.name);
-      setAdmin(user.isAdmin);
+      setUserName(user.username);
       setEmail(user.email);
     }
   }, [user]);
@@ -82,8 +82,8 @@ const Header = () => {
         icon={<FiMenu />}
       />
       <Text as="h2" display={{ base: 'flex', md: 'none' }} fontSize="xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.300'}>
-        <Image src={Logo} alt='SmartSpend' h='30px' />
-        SmartSpend
+        <Image src={Logo} alt='APS' h='30px' />
+        APS
       </Text>
       <HStack spacing={{ base: '0', md: '6' }}>
         {/* <IconButton size="lg" variant="ghost" aria-label="open menu" icon={<FiBell />} /> */}
@@ -97,7 +97,7 @@ const Header = () => {
                 />
                 <VStack display={{ base: 'none', md: 'flex' }} alignItems="flex-start" spacing="1px" ml="2">
                   <Text fontSize="sm">{userName}</Text>
-                  <Text fontSize="xs" color="gray.600">{admin ? 'Admin' : email}</Text>
+                  <Text fontSize="xs" color="gray.600">{isAdmin ? 'Admin' : email}</Text>
                 </VStack>
                 <Box display={{ base: 'none', md: 'flex' }}>
                   <FiChevronDown />
@@ -115,7 +115,7 @@ const Header = () => {
                   Settings
                 </ChakraLink>
               </MenuItem>
-              {admin && <MenuItem>
+              {isAdmin && <MenuItem>
                 <ChakraLink
                   as={Link}
                   to="/dashboard/users"
