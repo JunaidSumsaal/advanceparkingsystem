@@ -1,6 +1,9 @@
-from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+from django.utils import timezone
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+import uuid
 
 
 class User(AbstractUser):
@@ -79,3 +82,32 @@ class User(AbstractUser):
         indexes = [
             models.Index(fields=['role']),
         ]
+
+class AuditLog(models.Model):
+    ACTIONS = [
+        ("login", "Login"),
+        ("logout", "Logout"),
+        ("booking_create", "Booking Created"),
+        ("booking_cancel", "Booking Cancelled"),
+        ("spot_update", "Spot Updated"),
+        ("facility_update", "Facility Updated"),
+        ("attendant_assignment", "Attendant Assignment"),
+        ("notification_sent", "Notification Sent"),
+        ("payment", "Payment"),
+        ("other", "Other"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=50, choices=ACTIONS, default="other")
+    description = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.user} -> {self.action} @ {self.timestamp}"
+
