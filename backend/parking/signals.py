@@ -1,5 +1,6 @@
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_delete, pre_save
+from accounts.utils import log_action
 from .utils import calculate_distance, send_websocket_update
 from .models import ParkingSpot, SpotAvailabilityLog
 from notifications.models import PushSubscription
@@ -13,6 +14,7 @@ def update_facility_capacity_on_create(sender, instance, created, **kwargs):
         facility = instance.facility
         facility.capacity = facility.spots.filter(is_deleted=False).count()
         facility.save()
+        log_action(instance.created_by, "spot_created", f"Spot {instance.name} created in facility {facility.name}", instance.created_by.ip_address)
 
 
 @receiver(pre_delete, sender=ParkingSpot)
@@ -22,12 +24,14 @@ def update_facility_capacity_on_delete(sender, instance, **kwargs):
         facility = instance.facility
         facility.capacity = facility.spots.filter(is_deleted=False).exclude(id=instance.id).count()
         facility.save()
+        log_action(instance.deleted_by, "spot_deleted", f"Spot {instance.name} deleted from facility {facility.name}", instance.deleted_by.ip_address)
 
 
 @receiver(pre_save, sender=ParkingSpot)
 def create_availability_log(sender, instance, **kwargs):
     """Create a SpotAvailabilityLog whenever availability changes."""
     if not instance.pk:
+        log_action(instance.created_by, "spot_created", f"Spot {instance.name} created", instance.created_by.ip_address)
         return
     old_instance = ParkingSpot.objects.get(pk=instance.pk)
     if old_instance.is_available != instance.is_available:
@@ -36,6 +40,7 @@ def create_availability_log(sender, instance, **kwargs):
             is_available=instance.is_available,
             changed_by=getattr(instance, '_changed_by', None)
         )
+        log_action(instance.created_by, "spot_availability_changed", f"Spot {instance.name} availability changed to {instance.is_available}", instance.created_by.ip_address)
 
 @receiver(pre_save, sender=ParkingSpot)
 def spot_availability_change(sender, instance, **kwargs):
