@@ -1,25 +1,13 @@
 from django.core.management.base import BaseCommand
-from parking.ml import eval as eval_module
+from parking.ml.eval import evaluate_model
 
 class Command(BaseCommand):
-    help = "Evaluate the parking spot prediction model using historical logs."
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--tolerance',
-            type=int,
-            default=120,
-            help="Tolerance in seconds when matching predictions to actual availability (default: 120)"
-        )
+    help = "Evaluate the trained parking spot predictor model"
 
     def handle(self, *args, **options):
-        tolerance = options['tolerance']
-        self.stdout.write(self.style.NOTICE(
-            f"Starting evaluation with tolerance={tolerance} seconds..."
-        ))
-
+        self.stdout.write(self.style.WARNING("🚀 Starting model evaluation..."))
         try:
-            eval_module.evaluate_predictions(tolerance_seconds=tolerance)
-            self.stdout.write(self.style.SUCCESS("Evaluation completed successfully."))
+            evaluate_model()
+            self.stdout.write(self.style.SUCCESS("✅ Evaluation completed successfully"))
         except Exception as e:
-            self.stderr.write(self.style.ERROR(f"Error during evaluation: {e}"))
+            self.stdout.write(self.style.ERROR(f"❌ Error during evaluation: {e}"))
