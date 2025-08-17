@@ -57,7 +57,7 @@ export default function Contact() {
                         _hover={{ border: "2px solid #471405" }}
                         leftIcon={<MdPhone color="#fac7b8" size="20px" />}
                       >
-                        +254-123-456-789
+                        +44-123-456-789
                       </Button>
                       <Button
                         size="md"
@@ -68,7 +68,7 @@ export default function Contact() {
                         _hover={{ border: "2px solid #471405" }}
                         leftIcon={<MdEmail color="#fac7b8" size="20px" />}
                       >
-                        hello@kenya.com
+                        hello@advanceparkingsystem.com
                       </Button>
                       <Button
                         size="md"
@@ -79,7 +79,7 @@ export default function Contact() {
                         _hover={{ border: "2px solid #471405" }}
                         leftIcon={<MdLocationOn color="#fac7b8" size="20px" />}
                       >
-                        Mr Smith, Kenya
+                        Mr Smith, Uk
                       </Button>
                     </VStack>
                   </Box>

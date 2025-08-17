@@ -72,12 +72,12 @@ export default function Footer() {
           <Stack spacing={6}>
             <Box>
               <Text as="h2" fontSize="2xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.400'}>
-                <Image src={Logo} alt='SmartSpend' h='30px' />
-                SmartSpend
+                <Image src={Logo} alt='APS' h='30px' />
+                APS
               </Text>
             </Box>
             <Text fontSize={"sm"}>
-              © {currentYear} SmartSpend. All rights reserved
+              © {currentYear} AdvanceParkingSystem. All rights reserved
             </Text>
             <Stack direction={"row"} spacing={6}>
               <SocialButton label={"Twitter"} href={"#"}>

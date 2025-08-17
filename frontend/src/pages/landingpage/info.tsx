@@ -22,12 +22,11 @@ export default function Info() {
       flexDirection="column"
     >
       <Heading as="h2" size="xl" mt={6} mb={2}>
-        Why <span className="text-primary-400">SmartSpend</span> is Right for You
+        Why <Text as='span' color="primary.400">AdvanceParkingSystem</Text> is Right for You
       </Heading>
       <Text color="gray.500">
-        Choose SmartSpend for unmatched efficiency, a user-friendly interface,
-        and powerful budgeting tools. Perfect for individuals and teams
-        managing diverse financial goals.
+        Choose AdvanceParkingSystem for unmatched efficiency, a user-friendly interface,
+        and powerful parking system. Perfect for individuals and small businesses.
       </Text>
       <Container display="flex" flexDirection="column" alignItems="center">
         <Accordion allowMultiple width="100%" minW="4xl" rounded="lg">
@@ -38,12 +37,12 @@ export default function Info() {
               justifyContent="space-between"
               p={4}
             >
-              <Text fontSize="md">Effortless Expense Tracking</Text>
+              <Text fontSize="md">Effortless Parking, Anytime, Anywhere</Text>
               <ChevronDownIcon fontSize="24px" />
             </AccordionButton>
             <AccordionPanel pb={4}>
               <Text color="gray.600">
-                With SmartSpend, you can easily monitor spending, budgets, and savings without hassle.
+                Choose AdvanceParkingSystem for unmatched efficiency, a user-friendly interface, and powerful real-time parking tools. Perfect for drivers, commuters, and facility managers.
               </Text>
             </AccordionPanel>
           </AccordionItem>
@@ -55,13 +54,12 @@ export default function Info() {
               justifyContent="space-between"
               p={4}
             >
-              <Text fontSize="md">User-Centric Design</Text>
+              <Text fontSize="md">Real-Time Parking Insights</Text>
               <ChevronDownIcon fontSize="24px" />
             </AccordionButton>
             <AccordionPanel pb={4}>
               <Text color="gray.600">
-                The platform is designed with simplicity and functionality in mind,
-                making it perfect for both individuals and finance teams.
+                With AdvanceParkingSystem, you can easily monitor parking availability, spot locations, and costs without hassle.
               </Text>
             </AccordionPanel>
           </AccordionItem>
@@ -73,13 +71,12 @@ export default function Info() {
               justifyContent="space-between"
               p={4}
             >
-              <Text fontSize="md">Flexibility Across Devices</Text>
+              <Text fontSize="md">Built for Everyone</Text>
               <ChevronDownIcon fontSize="24px" />
             </AccordionButton>
             <AccordionPanel pb={4}>
               <Text color="gray.600">
-                Whether you’re at your desk or on the go, SmartSpend adapts to
-                your device and ensures a seamless experience.
+                The platform is designed with simplicity and functionality in mind, making it perfect for both individual drivers and large parking operators.
               </Text>
             </AccordionPanel>
           </AccordionItem>
@@ -91,12 +88,12 @@ export default function Info() {
               justifyContent="space-between"
               p={4}
             >
-              <Text fontSize="md">Real-Time Financial Updates</Text>
+              <Text fontSize="md">Seamless Across All Devices</Text>
               <ChevronDownIcon fontSize="24px" />
             </AccordionButton>
             <AccordionPanel pb={4}>
               <Text color="gray.600">
-                Add expenses, adjust budgets, and track savings with real-time synchronization across your account.
+                Whether you’re at your desk or on the go, AdvanceParkingSystem adapts to your device and ensures a seamless experience.
               </Text>
             </AccordionPanel>
           </AccordionItem>
@@ -108,13 +105,12 @@ export default function Info() {
               justifyContent="space-between"
               p={4}
             >
-              <Text fontSize="md">Built for Modern Financial Needs</Text>
+              <Text fontSize="md">Secure, Reliable, and Fast</Text>
               <ChevronDownIcon fontSize="24px" />
             </AccordionButton>
             <AccordionPanel pb={4}>
               <Text color="gray.600">
-                From secure authentication to lightning-fast performance,
-                SmartSpend gives you everything you need to master your finances easily.
+                From secure authentication to lightning-fast performance, AdvanceParkingSystem gives you everything you need to make parking stress-free.
               </Text>
             </AccordionPanel>
           </AccordionItem>

@@ -110,7 +110,7 @@ export default function Testimonials() {
             What Our <span className='text-gray-700'>Users Say</span>
           </Heading>
           <Text>
-            Hear how SmartSpend has empowered individuals and teams to take full control of their finances, budgets, and spending habits.
+            HHear how AdvanceParkingSystem has helped drivers and facility managers take full control of their parking experience.
           </Text>
         </Stack>
         <Stack
@@ -120,10 +120,10 @@ export default function Testimonials() {
           <Testimonial>
             <TestimonialContent>
               <TestimonialHeading>
-                <span className='text-gray-700'>Streamlined</span> My Finances
+                <span className='text-gray-700'>Found</span>Parking Stress-Free
               </TestimonialHeading>
               <TestimonialText>
-                SmartSpend has completely transformed the way I manage my budget. The intuitive dashboard and real-time insights make financial tracking so much easier!"
+                AdvanceParkingSystem completely changed the way I find parking. The live updates and instant alerts save me so much time in the city!
               </TestimonialText>
             </TestimonialContent>
             <TestimonialAvatar
@@ -131,16 +131,16 @@ export default function Testimonials() {
                 'https://plus.unsplash.com/premium_photo-1688740375397-34605b6abe48?q=80&w=1738&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
               }
               name={'Jessica Tran'}
-              title={'Freelance Consultant'}
+              title={'Urban Commuter'}
             />
           </Testimonial>
           <Testimonial>
             <TestimonialContent>
               <TestimonialHeading>
-                <span className='text-gray-700'>Perfect for</span> Team Budgeting
+                <span className='text-gray-700'>Perfect for</span> Facility Management
               </TestimonialHeading>
               <TestimonialText>
-                Our finance team uses SmartSpend to organize expenses and monitor budgets. The secure access and responsive design make collaboration seamless from anywhere.
+                Our team uses AdvanceParkingSystem to monitor spot availability and manage parking flow. The real-time tracking and reports make operations smooth and efficient.
               </TestimonialText>
             </TestimonialContent>
             <TestimonialAvatar
@@ -148,7 +148,7 @@ export default function Testimonials() {
                 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
               }
               name={'Daniel Kim'}
-              title={'Finance Manager'}
+              title={'Parking Facility Manager'}
             />
           </Testimonial>
           <Testimonial>
@@ -157,7 +157,7 @@ export default function Testimonials() {
                 <span className='text-gray-700'>Incredibly Simple</span> and Reliable
               </TestimonialHeading>
               <TestimonialText>
-                I’ve tried other financial tools, but SmartSpend stands out for its simplicity and accuracy. It’s now my go-to solution for managing monthly expenses.
+                I’ve tried other parking apps, but AdvanceParkingSystem stands out for its accuracy and ease of use. It’s my go-to app every time I drive downtown.
               </TestimonialText>
             </TestimonialContent>
             <TestimonialAvatar

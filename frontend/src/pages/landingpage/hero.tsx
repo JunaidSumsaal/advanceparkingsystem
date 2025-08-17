@@ -10,9 +10,10 @@ import {
   Icon,
   IconButton,
   createIcon,
-  IconProps,
-  useColorModeValue
+  useColorModeValue,
 } from "@chakra-ui/react";
+import type { IconProps } from "@chakra-ui/react";
+import Hero from '../../assets/hero-min.png';
 
 export default function HeroSection() {
   return (
@@ -40,18 +41,22 @@ export default function HeroSection() {
                 bottom: 1,
                 left: 0,
                 bg: "primary.400",
-                zIndex: -1
+                zIndex: -1,
               }}
             >
-              SmartSpend
+              AdvanceParkingSystem
             </Text>
             <br />
             <Text as={"span"} color={"primary.400"}>
-              Your All-in-One Financial Management Solution.
+              Your All-in-One Parking Management Solution.
             </Text>
           </Heading>
           <Text color={"gray.500"}>
-            Discover a centralized platform to manage budgets, track expenses, and gain deep insights into your financial health. Whether you're planning, spending, or saving, SmartSpend makes it simple, smart, and stress-free.
+            Discover a centralized platform to find real-time parking spot
+            availability, navigate with ease, and receive instant alerts when a
+            nearby spot opens up. Whether you are planning your day, looking for
+            parking, or managing payments, AdvanceParkingSystem makes parking
+            simple, smart, and stress-free.
           </Text>
           <Stack
             spacing={{ base: 4, sm: 6 }}
@@ -68,7 +73,7 @@ export default function HeroSection() {
               _hover={{ bg: "primary.500" }}
               href={"/register"}
             >
-              Start Managing
+              Get Started
             </Button>
           </Stack>
         </Stack>
@@ -114,9 +119,7 @@ export default function HeroSection() {
               align={"center"}
               w={"100%"}
               h={"100%"}
-              src={
-                "https://images.unsplash.com/photo-1533158307587-828f0a76ef46?q=80&w=1674&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              }
+              src={Hero}
             />
           </Box>
         </Flex>
@@ -128,7 +131,7 @@ export default function HeroSection() {
 const PlayIcon = createIcon({
   displayName: "PlayIcon",
   viewBox: "0 0 58 58",
-  d: "M28.9999 0.562988C13.3196 0.562988 0.562378 13.3202 0.562378 29.0005C0.562378 44.6808 13.3196 57.438 28.9999 57.438C44.6801 57.438 57.4374 44.6808 57.4374 29.0005C57.4374 13.3202 44.6801 0.562988 28.9999 0.562988ZM39.2223 30.272L23.5749 39.7247C23.3506 39.8591 23.0946 39.9314 22.8332 39.9342C22.5717 39.9369 22.3142 39.8701 22.0871 39.7406C21.86 39.611 21.6715 39.4234 21.5408 39.1969C21.4102 38.9705 21.3421 38.7133 21.3436 38.4519V19.5491C21.3421 19.2877 21.4102 19.0305 21.5408 18.8041C21.6715 18.5776 21.86 18.3899 22.0871 18.2604C22.3142 18.1308 22.5717 18.064 22.8332 18.0668C23.0946 18.0696 23.3506 18.1419 23.5749 18.2763L39.2223 27.729C39.4404 27.8619 39.6207 28.0486 39.7458 28.2713C39.8709 28.494 39.9366 28.7451 39.9366 29.0005C39.9366 29.2559 39.8709 29.507 39.7458 29.7297C39.6207 29.9523 39.4404 30.1391 39.2223 30.272Z"
+  d: "M28.9999 0.562988C13.3196 0.562988 0.562378 13.3202 0.562378 29.0005C0.562378 44.6808 13.3196 57.438 28.9999 57.438C44.6801 57.438 57.4374 44.6808 57.4374 29.0005C57.4374 13.3202 44.6801 0.562988 28.9999 0.562988ZM39.2223 30.272L23.5749 39.7247C23.3506 39.8591 23.0946 39.9314 22.8332 39.9342C22.5717 39.9369 22.3142 39.8701 22.0871 39.7406C21.86 39.611 21.6715 39.4234 21.5408 39.1969C21.4102 38.9705 21.3421 38.7133 21.3436 38.4519V19.5491C21.3421 19.2877 21.4102 19.0305 21.5408 18.8041C21.6715 18.5776 21.86 18.3899 22.0871 18.2604C22.3142 18.1308 22.5717 18.064 22.8332 18.0668C23.0946 18.0696 23.3506 18.1419 23.5749 18.2763L39.2223 27.729C39.4404 27.8619 39.6207 28.0486 39.7458 28.2713C39.8709 28.494 39.9366 28.7451 39.9366 29.0005C39.9366 29.2559 39.8709 29.507 39.7458 29.7297C39.6207 29.9523 39.4404 30.1391 39.2223 30.272Z",
 });
 
 const Blob = (props: IconProps) => {

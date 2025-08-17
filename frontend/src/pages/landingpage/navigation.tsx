@@ -22,10 +22,11 @@ import {
   ChevronRightIcon,
 } from '@chakra-ui/icons';
 import Logo from '../../assets/header_logo.png';
-import { isAuthenticated } from '../../utils/auth';
+import { useIsAuthenticated } from '../../hooks/useIsAuthenticated';
 
 export default function Navigation() {
   const { isOpen, onToggle } = useDisclosure()
+  const { isAuthenticated } = useIsAuthenticated();
 
   return (
     <Box>
@@ -59,8 +60,8 @@ export default function Navigation() {
               fontWeight="bold"
               fontSize={'2xl'}
             >
-              <Image src={Logo} alt='SmartSpend' h='30px' />
-              SmartSpend
+              <Image src={Logo} alt='APS' h='30px' />
+              APS
             </Text>
 
           <Flex display={{ base: 'none', md: 'flex' }} ml={10}>

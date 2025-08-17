@@ -16,23 +16,23 @@ import { CheckIcon } from "@chakra-ui/icons";
 const features = [
   {
     id: 1,
-    title: "Budget Tracking Made Easy",
-    text: "Quickly create, manage, and monitor your budgets with real-time insights."
+    title: "Real-Time Spot Availability",
+    text: "Quickly find, view, and monitor available parking spots with live updates powered by sensors and geotags."
   },
   {
     id: 2,
-    title: "Expense Management",
-    text: "Easily log, categorize, and review your expenses with detailed breakdowns."
+    title: "Smart Navigation & Alerts",
+    text: "Get guided directions to nearby parking and receive instant notifications when a spot opens up around you."
   },
   {
     id: 3,
-    title: "Smart Analytics",
-    text: "Gain powerful insights into your spending habits with interactive charts and trends."
+    title: "Dynamic Pricing Engine",
+    text: "Benefit from fair, transparent pricing that adapts in real-time based on demand and availability."
   },
   {
     id: 4,
-    title: "Mobile-First Experience",
-    text: "Enjoy a seamless, responsive experience across mobile, tablet, and desktop devices."
+    title: "Insights & Reports",
+    text: "Access parking history, cost summaries, and usage patterns to better plan your trips and manage expenses."
   }
 ];
 
@@ -40,9 +40,9 @@ export default function Features() {
   return (
     <Box p={4}>
       <Stack spacing={4} as={Container} maxW={"3xl"} textAlign={"center"}>
-        <Heading fontSize={"3xl"} color={'primary.400'}>Explore What <span className="text-gray-700">SmartSpend Offers</span></Heading>
+        <Heading fontSize={"3xl"} color={'primary.400'}>Explore What <span className="text-gray-700">AdvanceParkingSystem Offers</span></Heading>
         <Text color={"gray.600"} fontSize={"xl"}>
-        From budget tracking to insightful reports, SmartSpend empowers you with tools to manage your finances effortlessly. Designed for reliability and flexibility, it’s your ultimate financial companion.
+            From real-time spot tracking to smart pricing and instant alerts, AdvanceParkingSystem empowers you with the tools to make parking effortless. Designed for reliability and flexibility, it’s your ultimate parking companion.
         </Text>
       </Stack>
 
