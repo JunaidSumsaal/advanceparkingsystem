@@ -22,19 +22,21 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = Cookies.get('refreshToken');
-        if (!refreshToken) throw new Error('No refresh token');
+        const refresh = Cookies.get('refresh');
+        if (!refresh) {
+          throw new Error('No refresh token');
+        }
 
-        const res = await axios.post(`${import.meta.env.VITE_API_HOST}/api/auth/refresh-token`, { refreshToken });
-        const { accessToken } = res.data;
+        const res = await axios.post(`${import.meta.env.VITE_API_HOST}/accounts/refresh`, { refresh });
+        const { access } = res.data;
 
-        localStorage.setItem('token', accessToken);
-        originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+        localStorage.setItem('token', access);
+        originalRequest.headers['Authorization'] = `Bearer ${access}`;
 
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('token');
-        Cookies.remove('refreshToken');
+        Cookies.remove('refresh');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
