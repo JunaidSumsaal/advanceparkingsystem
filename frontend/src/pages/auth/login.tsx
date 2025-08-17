@@ -20,15 +20,14 @@ import {
 } from '@chakra-ui/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import Cookies from 'js-cookie';
 import Logo from '../../assets/header_logo.png';
 import { login as loginService } from '../../services/authService';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from "../../hooks/useAuth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [credentials, setCredentials] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
@@ -48,10 +47,11 @@ export default function Login() {
     setLoading(true);
     try {
       const response = await loginService(credentials);
+
+      console.log(response);
   
-      if (response.accessToken && response.refreshToken) {
-        Cookies.set('refreshToken', response.refreshToken, { expires: 7 });
-        authLogin(response.accessToken);
+      if (response.access && response.refresh) {
+        authLogin(response.access, response.refresh);
   
         toast({
           title: 'We are Glad to see You ✌️',
@@ -98,7 +98,7 @@ export default function Login() {
             as='a'
             href={'/'}
           >
-            <Image src={Logo} alt='SmartSpend' h='60px' />
+            <Image src={Logo} alt='APS' h='60px' />
           </Box>
           <Heading fontSize={"4xl"}>Sign in to your account</Heading>
           <Text fontSize={"lg"} color={"gray.600"} w={"max-content"}>
@@ -114,12 +114,12 @@ export default function Login() {
         >
           <Stack spacing={4}>
             <form onSubmit={handleSubmit}>
-              <FormControl id="email">
-                <FormLabel>Email address</FormLabel>
+              <FormControl id="username">
+                <FormLabel>Username</FormLabel>
                 <Input
-                  type="email"
+                  type="username"
                   focusBorderColor="primary.400"
-                  value={credentials.email}
+                  value={credentials.username}
                   onChange={handleChange}
                 />
               </FormControl>
