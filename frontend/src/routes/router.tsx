@@ -8,9 +8,6 @@ import LoaderDash from "../components/loader/loaders-dashboard";
 const LandingPage = lazy(() => import("../pages/landingpage/landingpage"));
 const Login = lazy(() => import("../pages/auth/login"));
 const Register = lazy(() => import("../pages/auth/register"));
-const RestEmail = lazy(() => import("../pages/auth/reset-email"));
-const ResetPassword = lazy(() => import("../pages/auth/reset-password"));
-const VerifyEmail = lazy(() => import("../pages/auth/verify-email"));
 const Dashboard = lazy(() => import("../pages/dashboard/Layout"));
 const Overview = lazy(() => import("../pages/dashboard/overview"));
 const Analytics = lazy(() => import("../pages/dashboard/analytics"));
@@ -42,30 +39,6 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<Loader />}>
         <Register />
-      </Suspense>
-    ),
-  },
-  {
-    path: "reset-email",
-    element: (
-      <Suspense fallback={<Loader />}>
-        <RestEmail />
-      </Suspense>
-    ),
-  },
-  {
-    path: "reset-password",
-    element: (
-      <Suspense fallback={<Loader />}>
-        <ResetPassword />
-      </Suspense>
-    ),
-  },
-  {
-    path: "verify-email",
-    element: (
-      <Suspense fallback={<Loader />}>
-        <VerifyEmail />
       </Suspense>
     ),
   },
