@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import check_password
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import User
+from .models import AuditLog, User
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,3 +65,11 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate_new_password(self, value):
         validate_password(value, self.context['request'].user)
         return value
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+
+    class Meta:
+        model = AuditLog
+        fields = ["id", "user", "action", "description", "ip_address", "user_agent", "created_at"]
