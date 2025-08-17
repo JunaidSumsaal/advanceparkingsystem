@@ -1,6 +1,6 @@
-export const API = import.meta.env.VITE_API_URL || '';
+export const API = import.meta.env.VITE_API_URL || '/api';
 
-export const AUTH = `/auth`;
+export const AUTH = `/accounts`;
 export const EXPENSES = `/expenses`;
 export const BUDGETS = `/budgets`;
 export const ANALYTICS = `/analytics`;
