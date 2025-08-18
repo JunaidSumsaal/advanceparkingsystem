@@ -81,10 +81,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useUsers = () => {
+export const useUsersContext = () => {
   const ctx = useContext(UserContext);
   if (!ctx) {
-    throw new Error("useUsers must be used inside UserProvider");
+    throw new Error("useUsersContext must be used inside UserProvider");
   }
   return ctx;
 };
