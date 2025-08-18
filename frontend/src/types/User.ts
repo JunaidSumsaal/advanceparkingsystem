@@ -3,8 +3,8 @@ export interface User {
   username: string;
   email: string;
   password?: string;
-  isAdmin?: boolean;
   role: string;
+  default_radius_km: string
 }
 
 
