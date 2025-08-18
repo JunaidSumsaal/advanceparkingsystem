@@ -23,10 +23,19 @@ import {
 } from '@chakra-ui/icons';
 import Logo from '../../assets/header_logo.png';
 import { useIsAuthenticated } from '../../hooks/useIsAuthenticated';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navigation() {
   const { isOpen, onToggle } = useDisclosure()
   const { isAuthenticated } = useIsAuthenticated();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
   return (
     <Box>
       <Flex
@@ -75,6 +84,15 @@ export default function Navigation() {
           direction={'row'}
           spacing={6}
           >
+            <Button
+              as={'button'}
+              fontSize={'sm'}
+              fontWeight={400}
+              variant={'link'}
+              onClick={handleLogout}
+            >
+                Logout
+            </Button>
             <Button
               as={'a'}
               display={{ base: 'none', md: 'inline-flex' }}
