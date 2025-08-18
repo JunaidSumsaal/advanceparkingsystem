@@ -1,5 +1,5 @@
 export const API = import.meta.env.VITE_API_URL || '/api';
-
+export const SECURE = import.meta.env.VITE_API_SECURE || false;
 export const AUTH = `/accounts`;
 export const EXPENSES = `/expenses`;
 export const BUDGETS = `/budgets`;
