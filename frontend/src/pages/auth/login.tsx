@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Flex,
   Box,
@@ -23,6 +23,7 @@ import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import Logo from '../../assets/header_logo.png';
 import { login as loginService } from '../../services/authService';
 import { useAuth } from "../../hooks/useAuth";
+import { useIsAuthenticated } from '../../hooks/useIsAuthenticated';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -30,10 +31,16 @@ export default function Login() {
     username: '',
     password: ''
   });
-  const [loading, setLoading] = useState(false);
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, loading } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const { isAuthenticated } = useIsAuthenticated()
+
+  useEffect(() => {
+    if (isAuthenticated ) {
+      navigate('/dashboard')
+    }
+  },[]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials({
@@ -44,11 +51,9 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     try {
       const response = await loginService(credentials);
 
-      console.log(response);
   
       if (response.access && response.refresh) {
         authLogin(response.access, response.refresh);
@@ -81,8 +86,6 @@ export default function Login() {
         isClosable: true,
         position: 'top'
       });
-    } finally {
-      setLoading(false);
     }
   };
   return (

@@ -27,7 +27,6 @@ import { useIsAuthenticated } from '../../hooks/useIsAuthenticated';
 export default function Navigation() {
   const { isOpen, onToggle } = useDisclosure()
   const { isAuthenticated } = useIsAuthenticated();
-
   return (
     <Box>
       <Flex

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Flex,
   Box,
@@ -23,6 +23,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/header_logo.png";
 import { register as registerService } from "../../services/authService";
 import { useAuth } from "../../hooks/useAuth";
+import { useIsAuthenticated } from '../../hooks/useIsAuthenticated';
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +37,13 @@ export default function Register() {
   const { login: authLogin } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const { isAuthenticated } = useIsAuthenticated();
+
+  useEffect(() => {
+  if (isAuthenticated) {
+    navigate('/dashboard');
+  }
+},[])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserData({ ...userData, [e.target.id]: e.target.value });
