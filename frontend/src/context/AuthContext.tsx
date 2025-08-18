@@ -11,14 +11,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  /** 🔑 Login */
+  /** Login */
   const login = (access: string, refreshToken: string) => {
     Cookies.set('token', access);
     Cookies.set('refresh', refreshToken);
     fetchUser(); // immediately load profile
   };
 
-  /** 🚪 Logout */
+  /** Logout */
   const logout = useCallback(async () => {
     try {
       await apiLogout();
@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   }, []);
 
-  /** ♻️ Refresh token */
+  /** Refresh token */
   const refreshAccessToken = useCallback(async () => {
     try {
       const data = await refresh(Cookies.get('refresh') || '');
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [logout]);
 
-  /** 👤 Fetch current user */
+  /** Fetch current user */
   const fetchUser = useCallback(async () => {
   try {
     const user = await getMe()

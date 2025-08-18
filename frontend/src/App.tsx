@@ -3,14 +3,17 @@ import { Router } from './routes';
 import { theme } from './utils/theme';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
+import { UserProvider } from './context/UsersContext';
 
-export default function App () {
+export default function App() {
   return (
     <>
       <ColorModeScript />
       <ChakraProvider theme={theme}>
         <AuthProvider>
-          <Router />
+          <UserProvider>
+            <Router />
+          </UserProvider>
         </AuthProvider>
       </ChakraProvider>
     </>
