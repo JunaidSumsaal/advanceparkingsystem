@@ -1,10 +1,12 @@
 from datetime import timezone
 from django.utils.timezone import now, timedelta
 from parking.ml.predict_service import predict_for_spots
+from .pricing import update_dynamic_prices
 from .models import Booking, ParkingSpot, SpotPredictionLog
-from notifications.utils import send_push_notification, log_notification_event
+from notifications.utils import send_web_push, log_notification_event
 from notifications.models import PushSubscription
 from celery import shared_task
+from django.core.management import call_command
 
 def send_booking_reminders():
     upcoming_bookings = Booking.objects.filter(
@@ -19,7 +21,7 @@ def send_booking_reminders():
                 "endpoint": sub.endpoint,
                 "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
             }
-            status = "sent" if send_push_notification(
+            status = "sent" if send_web_push(
                 subscription_info,
                 "Booking Expiring Soon",
                 f"Your booking for {booking.parking_spot.name} will expire in 10 minutes."
@@ -45,3 +47,14 @@ def run_spot_predictions():
         )
         saved += 1
     return f"Saved {saved} predictions"
+
+@shared_task
+def recalc_dynamic_prices():
+    return update_dynamic_prices()
+
+@shared_task
+def generate_archive_report_task(period="daily"):
+    """
+    Wrapper for management command `generate_archive_report`
+    """
+    call_command("generate_archive_report", period=period)

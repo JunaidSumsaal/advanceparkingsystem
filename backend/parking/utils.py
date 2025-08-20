@@ -3,9 +3,8 @@ from asgiref.sync import async_to_sync
 import time
 import logging
 from notifications.models import PushSubscription
-from notifications.utils import send_push_notification
+from notifications.utils import send_web_push
 from math import radians, sin, cos, sqrt, atan2
-from django.utils.timezone import now
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ def send_websocket_update(spot):
 def notify_spot_available(spot):
     subscriptions = PushSubscription.objects.all()
     for sub in subscriptions:
-        send_push_notification(sub, "Spot Available", f"{spot.name} is now free")
+        send_web_push(sub, "Spot Available", f"{spot.name} is now free")
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     # Haversine formula

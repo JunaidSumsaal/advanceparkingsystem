@@ -6,10 +6,12 @@ from .views import (
     NearbyParkingSpotsView,
     BookParkingSpotView,
     NavigateToSpotView,
+    SpotPriceLogView,
     SpotReviewCreateView,
     SpotAvailabilityLogListView,
     ParkingFacilityView,
     BookingViewSet,
+    trigger_dynamic_pricing,
 )
 
 router = DefaultRouter()
@@ -24,4 +26,6 @@ urlpatterns = [
     path('review/', SpotReviewCreateView.as_view(), name='spot_review'),
     path('availability/logs/', SpotAvailabilityLogListView.as_view(), name='availability_logs'),
     path('predictions/nearby/', NearbyPredictionsView.as_view(), name='predictions_nearby'),
+    path("pricing/update/", trigger_dynamic_pricing, name="update_dynamic_pricing"),
+    path("pricing/logs/", SpotPriceLogView.as_view(), name="spot_price_logs"),
 ] + router.urls

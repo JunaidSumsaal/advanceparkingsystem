@@ -1,10 +1,14 @@
 from rest_framework import serializers
-from .models import ParkingFacility, ParkingSpot, Booking, SpotReview, SpotAvailabilityLog
+from .models import ArchiveReport, ParkingFacility, ParkingSpot, Booking, SpotPriceLog, SpotReview, SpotAvailabilityLog
 
 class ParkingSpotSerializer(serializers.ModelSerializer):
+    dynamic_price = serializers.SerializerMethodField()
     class Meta:
         model = ParkingSpot
         fields = '__all__'
+        
+    def get_dynamic_price(self, obj):
+        return obj.dynamic_price_per_hour
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,3 +49,15 @@ class ParkingFacilitySerializer(serializers.ModelSerializer):
         if value is not None and value < 0:
             raise serializers.ValidationError("Capacity cannot be negative.")
         return value
+
+class SpotPriceLogSerializer(serializers.ModelSerializer):
+    spot_name = serializers.CharField(source="parking_spot.name", read_only=True)
+
+    class Meta:
+        model = SpotPriceLog
+        fields = ["id", "spot_name", "old_price", "new_price", "updated_at"]
+        
+class ArchiveReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArchiveReport
+        fields = "__all__"
