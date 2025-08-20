@@ -1,5 +1,7 @@
 from prometheus_client import Counter, Histogram, Gauge
+from parking.models import ParkingSpot
 
+NOTIFS_SENT = Counter("aps_notifications_sent_total","Notifications sent",["channel","status"])
 WS_CONNECTIONS = Counter('ws_connections_total', 'WebSocket connections established')
 WS_MESSAGES_SENT = Counter('ws_messages_sent_total', 'WebSocket messages sent')
 WS_SEND_LATENCY = Histogram('ws_send_latency_seconds', 'Latency of sending WS message')
@@ -14,7 +16,10 @@ SPOT_SELECTED = Counter('spot_selected_total', 'Total spots selected')
 MODEL_TRAINING_REQUESTS = Counter(
     "spot_model_training_requests_total", "Number of model training runs"
 )
-
 MODEL_ACCURACY = Gauge(
     "spot_model_accuracy", "Latest model training accuracy"
 )
+AVG_PRICE = Gauge("aps_avg_price_per_hour", "Average spot price per hour")
+AVG_PRICE.set(sum(float(s.price_per_hour) for s in ParkingSpot.objects.all()) / ParkingSpot.objects.count())
+
+

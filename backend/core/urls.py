@@ -1,5 +1,12 @@
 from django.contrib import admin
+from rest_framework.routers import DefaultRouter
 from django.urls import include, path
+from notifications.views import NotificationViewSet, PushSubscriptionViewSet
+
+
+router = DefaultRouter()
+router.register(r'notifications', NotificationViewSet, basename='notifications')
+router.register(r'push-subscriptions', PushSubscriptionViewSet, basename='push-subscriptions')
 
 urlpatterns = [
     path('portal/admin/', admin.site.urls),

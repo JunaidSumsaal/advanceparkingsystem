@@ -1,7 +1,8 @@
-from pathlib import Path
-import environ
-from datetime import timedelta
 import os
+import environ
+from pathlib import Path
+from datetime import timedelta
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,6 +16,21 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=True)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost'])
 
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_TIME_LIMIT = 30
+CELERY_TASK_SOFT_TIME_LIMIT = 20
+# CELERY_TASK_SERIALIZER = env('CELERY_TASK_SERIALIZER', default='json')
+# CELERY_ACCEPT_CONTENT = env.list('CELERY_ACCEPT_CONTENT', default=['json'])
+# CELERY_RESULT_SERIALIZER = env('CELERY_RESULT_SERIALIZER', default='json')
+
+APPEND_SLASH = False
+
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='95d05a8c43ad9b3d9f079995211fac2f188bfa7b')
+VAPID_CLAIM_SUB = env('VAPID_CLAIM_SUB', default='mailto:advanceparkingsystem@gmail.com')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+
 INSTALLED_APPS = [
     'django_prometheus',
     'django.contrib.admin',
@@ -25,11 +41,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'channels',
     'accounts',
+    'rest_framework_simplejwt.token_blacklist',
     'parking',
     'notifications',
-    'channels',
-    'rest_framework_simplejwt.token_blacklist',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -128,12 +145,22 @@ SIMPLE_JWT = {
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+        "CONFIG": {"hosts": [env("REDIS_URL", default="redis://localhost:6379/0")]},
     },
 }
-APPEND_SLASH = False
+
+CELERY_BEAT_SCHEDULE = {
+    "send-notifications-every-minute": {
+        "task": "notifications.tasks.send_pending_notifications",
+        "schedule": 60.0,  # every 60 seconds
+    },
+    "provider-daily-digest": {
+        "task": "notifications.tasks.daily_digest_for_provider",
+        "schedule": crontab(hour=7, minute=0),
+        "args": (1,),  # example provider_id; replace with a beat that loops providers if needed to whoever needs it in the system
+    },
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
