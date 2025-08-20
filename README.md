@@ -341,7 +341,142 @@ publicKey:  "BNxxxxxxx"
 privateKey: "kxxxxxxx"
 ```
 
-Place them in `.env` for backend + frontend.
+You can then use these keys in your `.env` files for both backend and frontend.
+
+# Docker Setup for AdvanceParkingSystem
+
+Project structure (with Docker):
+
+```
+advanceparkingsystem/
+│── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── .env
+│── frontend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── .env
+│── docker-compose.yml
+```
+
+## `backend/Dockerfile`
+
+```dockerfile
+# Backend: Django + Gunicorn
+FROM python:3.10-slim
+
+# Set workdir
+WORKDIR /app
+
+# Install system deps
+RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+
+# Install Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY . .
+
+# Run migrations & collectstatic
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"]
+```
+
+
+
+## `frontend/Dockerfile`
+
+```dockerfile
+# Frontend: React Vite
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Copy frontend code
+COPY . .
+
+# Build app
+RUN npm run build
+
+# Serve with a lightweight server
+RUN npm install -g serve
+CMD ["serve", "-s", "dist", "-l", "5173"]
+```
+
+
+## `docker-compose.yml`
+
+```yaml
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: aps-backend
+    env_file: ./backend/.env
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: aps-frontend
+    env_file: ./frontend/.env
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:15
+    container_name: aps-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+```
+
+
+
+## Running the System
+
+1. **Build & start**
+
+```bash
+docker-compose up --build
+```
+
+2. **Apply migrations manually if first run**
+
+```bash
+docker exec -it aps-backend python manage.py migrate
+```
+
+3. **Access**
+
+* Backend API → [http://localhost:8000/api](http://localhost:8000/api)
+* Frontend → [http://localhost:5173](http://localhost:5173)
+* Database → `localhost:5432`
+
 
 ## Pending Features
 
