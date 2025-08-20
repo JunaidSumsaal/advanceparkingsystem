@@ -3,6 +3,7 @@ import environ
 from pathlib import Path
 from datetime import timedelta
 from celery.schedules import crontab
+from pythonjsonlogger import jsonlogger
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,9 +22,9 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_TIME_LIMIT = 30
 CELERY_TASK_SOFT_TIME_LIMIT = 20
-# CELERY_TASK_SERIALIZER = env('CELERY_TASK_SERIALIZER', default='json')
-# CELERY_ACCEPT_CONTENT = env.list('CELERY_ACCEPT_CONTENT', default=['json'])
-# CELERY_RESULT_SERIALIZER = env('CELERY_RESULT_SERIALIZER', default='json')
+CELERY_TASK_SERIALIZER = env('CELERY_TASK_SERIALIZER', default='json')
+CELERY_ACCEPT_CONTENT = env.list('CELERY_ACCEPT_CONTENT', default='json')
+CELERY_RESULT_SERIALIZER = env('CELERY_RESULT_SERIALIZER', default='json')
 
 APPEND_SLASH = False
 
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_extensions',
     'corsheaders',
     'channels',
     'accounts',
@@ -161,9 +163,28 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+LOG_LEVEL = env("DJANGO_LOG_LEVEL", default="INFO")
+
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {'console': {'class': 'logging.StreamHandler'}},
-    'root': {'handlers': ['console'], 'level': 'INFO'},
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "fmt": "%(asctime)s %(levelname)s %(name)s %(message)s %(user)s %(ip)s %(session_id)s",
+        },
+        "default": {
+            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
 }
