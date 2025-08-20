@@ -105,6 +105,14 @@ python manage.py runserver
 
 Backend runs on **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**
 
+## Train the Prediction Model
+
+```bash
+# Train the AI model for parking spot predictions
+# This will create a Random Forest model and save it to the database
+# Ensure you have the necessary data in your database before running this
+python manage.py train_spot_predictor
+```
 
 ## Frontend Setup (React + Vite + Tailwind)
 
@@ -189,7 +197,7 @@ export const getNearbySpots = async (lat, lng, radius = 2) => {
 };
 ```
 
----
+
 
 ### 4. Usage in a React Component
 
@@ -221,7 +229,119 @@ export default function NearbySpots() {
 }
 ```
 
----
+## Environment Configuration
+
+### Backend (`backend/.env`)
+
+Create a `.env` file inside the **backend/** folder:
+
+```ini
+# Django
+DEBUG=True
+SECRET_KEY=your-secret-key-here
+
+# Database (Postgres recommended)
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=advanceparking
+DB_USER=advanceparking_user
+DB_PASSWORD=yourpassword
+DB_HOST=localhost
+DB_PORT=5432
+
+# JWT Settings
+ACCESS_TOKEN_LIFETIME=60          # minutes
+REFRESH_TOKEN_LIFETIME=1          # days
+
+# Email (for notifications & password reset)
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=youremail@gmail.com
+EMAIL_HOST_PASSWORD=your-email-password
+
+# Push Notifications (WebPush VAPID keys)
+VAPID_PUBLIC_KEY=your-public-key
+VAPID_PRIVATE_KEY=your-private-key
+VAPID_ADMIN_EMAIL=admin@advanceparking.com
+
+# CORS (to allow frontend requests)
+CORS_ALLOWED_ORIGINS=http://localhost:5173
+```
+
+Load it in **`backend/core/settings.py`** using `django-environ`:
+
+```python
+import environ
+import os
+
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+SECRET_KEY = env("SECRET_KEY")
+DEBUG = env.bool("DEBUG", default=False)
+ALLOWED_HOSTS = ["*"]
+
+DATABASES = {
+    "default": {
+        "ENGINE": env("DB_ENGINE", default="django.db.backends.sqlite3"),
+        "NAME": env("DB_NAME", default=os.path.join(BASE_DIR, "db.sqlite3")),
+        "USER": env("DB_USER", default=""),
+        "PASSWORD": env("DB_PASSWORD", default=""),
+        "HOST": env("DB_HOST", default=""),
+        "PORT": env("DB_PORT", default=""),
+    }
+}
+```
+
+### Frontend (`frontend/.env`)
+
+Create a `.env` file inside the **frontend/** folder:
+
+```ini
+# API URL (Backend Django)
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+
+# Google Maps API (for navigation links)
+VITE_GOOGLE_MAPS_KEY=your-google-maps-key
+
+# Push Notifications
+VITE_VAPID_PUBLIC_KEY=your-public-key
+```
+
+Access in **React Vite** like this:
+
+```javascript
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+fetch(`${apiBaseUrl}/parking/nearby/`)
+  .then((res) => res.json())
+  .then(console.log);
+```
+
+
+### Generating VAPID Keys for Push Notifications
+
+Run this in Django shell:
+
+```bash
+pip install pywebpush
+python manage.py shell
+```
+
+```python
+from pywebpush import generate_vapid_keys
+print(generate_vapid_keys())
+```
+
+This will give you:
+
+```txt
+publicKey:  "BNxxxxxxx"
+privateKey: "kxxxxxxx"
+```
+
+Place them in `.env` for backend + frontend.
 
 ## Pending Features
 
