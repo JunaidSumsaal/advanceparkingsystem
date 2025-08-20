@@ -14,8 +14,10 @@ import {
 } from "@chakra-ui/react";
 import type { IconProps } from "@chakra-ui/react";
 import Hero from '../../assets/hero-min.png';
+import { useIsAuthenticated } from "../../hooks/useIsAuthenticated";
 
 export default function HeroSection() {
+  const { isAuthenticated } = useIsAuthenticated();
   return (
     <Container maxW={"7xl"}>
       <Stack
@@ -71,9 +73,9 @@ export default function HeroSection() {
               colorScheme={"orange"}
               bg={"primary.400"}
               _hover={{ bg: "primary.500" }}
-              href={"/register"}
+              href={isAuthenticated ? "/dashboard" : "/register"}
             >
-              Get Started
+              {isAuthenticated ? "Go to Dashboard" : "Get Started"}
             </Button>
           </Stack>
         </Stack>
