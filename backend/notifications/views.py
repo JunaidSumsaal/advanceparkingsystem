@@ -1,8 +1,10 @@
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from accounts.utils import log_action
+from rest_framework.decorators import action, api_view, permission_classes
 from .models import PushSubscription, Notification, EmailPreference
 from .serializers import PushSubscriptionSerializer, NotificationSerializer, EmailPreferenceSerializer
+from django.utils import timezone
 
 class PushSubscriptionCreateView(generics.CreateAPIView):
     serializer_class = PushSubscriptionSerializer
@@ -36,6 +38,36 @@ class NotificationListView(generics.ListAPIView):
     def get_queryset(self):
         log_action(self.request.user, "view_notifications", "User viewed notifications", self.request)
         return Notification.objects.filter(user=self.request.user).order_by('-sent_at')
+    
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by("-sent_at")
+
+    @action(detail=False, methods=["get"])
+    def unread_count(self, request):
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({"unread": count})
+
+    @action(detail=True, methods=["patch"])
+    def read(self, request, pk=None):
+        notif = self.get_queryset().filter(pk=pk).first()
+        if not notif:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if not notif.is_read:
+            notif.is_read = True
+            notif.read_at = timezone.now()
+            notif.save(update_fields=["is_read","read_at"])
+        return Response(NotificationSerializer(notif).data)
+
+    @action(detail=False, methods=["post"])
+    def mark_all_read(self, request):
+        qs = self.get_queryset().filter(is_read=False)
+        now = timezone.now()
+        qs.update(is_read=True, read_at=now)
+        return Response({"updated": qs.count()})
 
 class EmailPreferenceUpdateView(generics.UpdateAPIView):
     serializer_class = EmailPreferenceSerializer
