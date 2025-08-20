@@ -8,6 +8,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("🚀 Starting model evaluation..."))
         try:
             evaluate_model()
-            self.stdout.write(self.style.SUCCESS("✅ Evaluation completed successfully"))
+            self.stdout.write(self.style.SUCCESS("Evaluation completed successfully"))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"❌ Error during evaluation: {e}"))
+            self.stdout.write(self.style.ERROR(f"Error during evaluation: {e}"))
