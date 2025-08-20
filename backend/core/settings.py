@@ -66,9 +66,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
+    "default": env.db(
+        "DATABASE_URL", 
+        default="postgres://username:password@localhost:5432/advanceparkingsystem"
+    )
 }
+
+
+if DEBUG:
+    DATABASES = {
+        "default": env.db("SQLITE_URL", default="sqlite:///db.sqlite3")
+    }
+
+
 
 
 AUTH_PASSWORD_VALIDATORS = [
