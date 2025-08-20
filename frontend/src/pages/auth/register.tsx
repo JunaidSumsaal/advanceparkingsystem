@@ -21,11 +21,15 @@ import {
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/header_logo.png";
-import { register as registerService } from "../../services/authService";
 import { useAuth } from "../../hooks/useAuth";
-import { useIsAuthenticated } from '../../hooks/useIsAuthenticated';
+import { useIsAuthenticated } from "../../hooks/useIsAuthenticated";
 
 export default function Register() {
+  const {
+    register: registration,
+    formErrors: error,
+    loading: loader,
+  } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [userData, setUserData] = useState({
     username: "",
@@ -33,17 +37,17 @@ export default function Register() {
     password: "",
     password_confirm: "",
   });
-  const [loading, setLoading] = useState(false);
-  const { login: authLogin } = useAuth();
+  const [loading, setLoading] = useState(loader);
   const toast = useToast();
   const navigate = useNavigate();
   const { isAuthenticated } = useIsAuthenticated();
 
   useEffect(() => {
-  if (isAuthenticated) {
-    navigate('/dashboard');
-  }
-},[])
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserData({ ...userData, [e.target.id]: e.target.value });
@@ -65,37 +69,26 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const response = await registerService({
+      await registration({
         username: userData.username,
         email: userData.email,
         password: userData.password,
       });
-
-      if (response.access && response.refresh) {
-        authLogin(response.access, response.refresh);
-        toast({
-          title: "Registration successful!",
-          description: "Welcome to APS!",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
-        navigate("/dashboard");
-      } else {
-        toast({
-          title: "Registration failed",
-          description: response.message || "Something went wrong.",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
-      }
-    } catch (error: any) {
+      toast({
+        title: "Registration successful!",
+        description: "Welcome to APS!",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+      navigate("/dashboard");
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.error || "Something went wrong.";
       toast({
         title: "Registration failed",
-        description: error.response?.data?.message || "Something went wrong.",
+        description: errorMessage,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -143,6 +136,11 @@ export default function Register() {
                       onChange={handleChange}
                       value={userData.username}
                     />
+                    {error?.username && (
+                      <Text color="red.500" fontSize="sm">
+                        {error.username[0]}
+                      </Text>
+                    )}
                   </FormControl>
                 </Box>
               </HStack>
@@ -155,6 +153,11 @@ export default function Register() {
                   value={userData.email}
                   focusBorderColor="primary.400"
                 />
+                {error?.email && (
+                  <Text color="red.500" fontSize="sm">
+                    {error.email[0]}
+                  </Text>
+                )}
               </FormControl>
 
               <FormControl id="password" isRequired>
