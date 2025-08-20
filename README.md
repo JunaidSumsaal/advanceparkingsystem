@@ -165,7 +165,3 @@ python manage.py createsuperuser
 ## License
 
 MIT License – free to use, modify, and distribute.
-
-
-
-Would you like me to also include **frontend/backend integration instructions** (e.g., how React calls the Django API with Axios + JWT) so developers don’t get stuck wiring them together?
