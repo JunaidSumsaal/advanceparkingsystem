@@ -1,74 +1,78 @@
 # AdvanceParkingSystem
 
-AdvanceParkingSystem is a **full-stack smart parking management platform** with a **Django REST Framework backend** and a **React (Tailwind) frontend**.
+AdvanceParkingSystem is a **full-stack smart parking management platform** with a **Django REST Framework backend** and a **React (Vite + Tailwind) frontend**.
 
 It integrates **AI-powered parking spot predictions**, **real-time notifications**, and **role-based dashboards** for Drivers, Attendants, and Providers.
-
-
+This system is designed to streamline parking operations, enhance user experience, and leverage machine learning for future availability predictions.
 
 ## Features
 
 ### Authentication & User Roles
 
-* Custom user model with roles: **Driver**, **Attendant**, **Provider**, **Admin**.
-* JWT-based authentication.
-* Advanced audit logging for all actions.
+* JWT authentication with refresh tokens.
+* Roles: **Driver**, **Attendant**, **Provider**, **Admin**.
+* Advanced audit logging (all user actions tracked).
 
 ### Parking Management
 
-* Facility & spot management (public/private).
-* Spot availability logs and booking history.
-* Soft delete/restore for facilities and spots.
+* Facility & spot management.
+* Soft delete & restore (archival mode).
+* Booking history & real-time spot availability.
 
 ### Booking & Navigation
 
-* Real-time spot booking and cancellation.
-* Booking prevention for unavailable/self-owned spots.
+* One-click booking & cancellation.
 * Google Maps integration for navigation.
+* Prevent self-booking (providers can’t book their own spots).
 
 ### AI-Powered Predictions
 
-* Random Forest–based **availability predictor**.
-* Features include time, spot type, demand ratios, and active bookings.
-* Training command + evaluation metrics (AUC, Precision, Brier).
+* Random Forest model for **future availability**.
+* Training + evaluation (`AUC`, `Brier`, `Precision`).
+* Per-spot prediction logging.
 
 ### Notifications
 
-* Push subscriptions via Web Push API.
-* Email preferences for users.
-* Types: spot availability, booking reminders, general alerts.
+* Push API subscriptions.
+* Email preferences per user.
+* Notification templates (availability, booking reminders, alerts).
 
 ### Dashboards
 
-* **Driver Dashboard** – Nearby spots, bookings, navigation.
-* **Attendant Dashboard** – Facility/spot oversight.
-* **Provider Dashboard** – Occupancy, revenue, prediction reports.
+* **Driver Dashboard** → Nearby spots, bookings, navigation.
+* **Attendant Dashboard** → Facility/spot oversight.
+* **Provider Dashboard** → Revenue, occupancy, AI reports.
+* **Admin Dashboard** → User management, analytics, system health.
 
+### Metrics & Analytics
 
+* System health metrics (uptime, response times).
+* User activity tracking (logins, bookings).
+* Spot usage analytics (occupancy rates, peak times).
 
 ## Project Structure
 
 ```bash
 advanceparkingsystem/
 │── backend/                 # Django backend (REST API + ML)
-│   ├── accounts/            # Custom user model & auth
+│   ├── accounts/            # Authentication + roles
 │   ├── parking/             # Facilities, spots, bookings, predictions
-│   ├── notifications/       # Push/email notification system
+│   ├── notifications/       # Push/email notifications
 │   ├── dashboard/           # Role-based dashboards
-│   ├── core/                # Settings, metrics, utilities
+│   ├── core/                # Settings, utils, metrics
 │   └── manage.py
 │
-│── frontend/                # React + Tailwind frontend
+│── frontend/                # React + Vite + Tailwind frontend
 │   ├── src/
+│   │   ├── api/             # Axios API clients
 │   │   ├── components/      # UI components
-│   │   ├── pages/           # Page-level views
-│   │   ├── hooks/           # Custom hooks (auth, API)
-│   │   └── App.js
+│   │   ├── pages/           # Page views
+│   │   ├── hooks/           # Auth & data fetching hooks
+│   │   └── App.jsx
 │   └── package.json
 │
 └── README.md
 ```
-
 
 
 ## Backend Setup (Django)
@@ -78,8 +82,6 @@ advanceparkingsystem/
 * Python **3.10+**
 * Django **4.x**
 * PostgreSQL or SQLite
-
-### Steps
 
 ```bash
 cd backend
@@ -97,26 +99,19 @@ python manage.py migrate
 # Seed database with demo data
 python manage.py seed_data
 
-# Run backend server
+# Run backend
 python manage.py runserver
 ```
 
-### Train the Prediction Model
-
-```bash
-python manage.py train_spot_predictor
-```
+Backend runs on **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**
 
 
-
-## Frontend Setup (React + Tailwind)
+## Frontend Setup (React + Vite + Tailwind)
 
 ### Prerequisites
 
 * Node.js **16+**
 * npm or yarn
-
-### Steps
 
 ```bash
 cd frontend
@@ -124,43 +119,118 @@ cd frontend
 # Install dependencies
 npm install
 
-# Run development server
+# Run frontend (Vite dev server)
 npm run dev
 ```
 
-The React app runs by default at:
-**[http://localhost:5173](http://localhost:5173)**
+Frontend runs on **[http://localhost:5173/](http://localhost:5173/)**
 
 
+## Connecting Frontend & Backend
 
-## Development
+### 1. Configure API base URL
 
-### Superuser for backend
+Create **`frontend/src/api/axios.js`**
 
-```bash
-python manage.py createsuperuser
+```javascript
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000/api/",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("access");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
 ```
 
-### Admin panel
+### 2. Example Auth API
 
-[http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
+**`frontend/src/api/auth.js`**
 
-### API root
+```javascript
+import api from "./axios";
+import Cookies from "js-cookie";
 
-[http://127.0.0.1:8000/api/](http://127.0.0.1:8000/api/)
+export const login = async (username, password) => {
+  const response = await api.post("token/", { username, password });
+  if (response.data.access) {
+    Cookies.set("access", response.data.access);
+    Cookies.set("refresh", response.data.refresh);
+  }
+  return response.data;
+};
 
+export const logout = () => {
+  Cookies.removeItem("access");
+  Cookies.removeItem("refresh");
+};
+```
 
+### 3. Fetch Example (Nearby Spots)
+
+```javascript
+import api from "./axios";
+
+export const getNearbySpots = async (lat, lng, radius = 2) => {
+  const res = await api.get("parking/nearby/", {
+    params: { lat, lng, radius },
+  });
+  return res.data;
+};
+```
+
+---
+
+### 4. Usage in a React Component
+
+```jsx
+import React, { useEffect, useState } from "react";
+import { getNearbySpots } from "../api/parking";
+
+export default function NearbySpots() {
+  const [spots, setSpots] = useState([]);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      getNearbySpots(pos.coords.latitude, pos.coords.longitude).then(setSpots);
+    });
+  }, []);
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold">Nearby Spots</h2>
+      <ul>
+        {spots.map((s) => (
+          <li key={s.id}>
+            {s.name} — {s.latitude}, {s.longitude}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+---
 
 ## Pending Features
 
 * [ ] Dynamic pricing engine.
 * [ ] Background push notification delivery (Celery).
-* [ ] In-app WebSocket notifications.
+* [ ] WebSocket-based in-app notifications.
 * [ ] Export reports (CSV/Excel).
 * [ ] Admin dashboards for analytics.
 * [ ] Dockerized AI training pipeline.
-
-
 
 ## License
 
