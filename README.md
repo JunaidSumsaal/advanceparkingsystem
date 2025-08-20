@@ -162,7 +162,7 @@ python manage.py createsuperuser
 
 
 
-## 📜 License
+## License
 
 MIT License – free to use, modify, and distribute.
 
