@@ -1,7 +1,8 @@
-from .models import SpotPriceLog
 from django.utils import timezone
+from .models import SpotPriceLog
 from .models import ParkingSpot
 from accounts.utils import log_action
+from core.metrics import AVG_PRICE
 
 def calculate_dynamic_price(spot: ParkingSpot) -> float:
     now = timezone.now()
@@ -44,5 +45,6 @@ def update_dynamic_prices(user=None):
             spot.save(update_fields=["price_per_hour"])
             updated += 1
             log_action(user, "dynamic_price_update", f"Spot {spot.id} new price={new_price}", None)
+    AVG_PRICE.set(sum(float(s.price_per_hour) for s in ParkingSpot.objects.all()) / ParkingSpot.objects.count())
     return updated
 

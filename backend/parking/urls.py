@@ -2,7 +2,6 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import (
     NearbyPredictionsView,
-    ParkingSpotListCreateView,
     NearbyParkingSpotsView,
     BookParkingSpotView,
     NavigateToSpotView,
@@ -12,14 +11,15 @@ from .views import (
     ParkingFacilityView,
     BookingViewSet,
     trigger_dynamic_pricing,
+    ParkingSpotViewSet,
 )
 
 router = DefaultRouter()
 router.register(r'bookings', BookingViewSet, basename='booking')
 router.register(r'facilities', ParkingFacilityView, basename='facility')
+router.register(r'spots', ParkingSpotViewSet, basename='parking_spot')
 
 urlpatterns = [
-    path('spots/', ParkingSpotListCreateView.as_view(), name='parking_spots'),
     path('nearby/', NearbyParkingSpotsView.as_view(), name='nearby_spots'),
     path('book/', BookParkingSpotView.as_view(), name='book_spot'),
     path('navigate/<int:spot_id>/', NavigateToSpotView.as_view(), name='navigate_spot'),

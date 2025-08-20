@@ -117,7 +117,8 @@ class ParkingFacilityView(viewsets.ModelViewSet):
 
 class ParkingSpotViewSet(viewsets.ModelViewSet):
     serializer_class = ParkingSpotSerializer
-    permission_classes = [permissions.IsAuthenticated, IsProviderOrAdmin]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsProviderOrAdmin]
 
     def get_queryset(self):
         qs = ParkingSpot.objects.all()
@@ -135,27 +136,6 @@ class ParkingSpotViewSet(viewsets.ModelViewSet):
             qs = qs.filter(provider=user)
 
         return qs
-    
-    @action(detail=False, methods=["post"])
-    def bulk_archive(self, request):
-        ids = request.data.get("ids", [])
-        updated = ParkingSpot.objects.filter(id__in=ids).update(is_active=False)
-        log_action(request.user, "bulk_archive_spots", f"Archived {updated} spots", request)
-        return Response({"archived": updated}, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=["post"])
-    def bulk_restore(self, request):
-        ids = request.data.get("ids", [])
-        updated = ParkingSpot.objects.filter(id__in=ids).update(is_active=True)
-        log_action(request.user, "bulk_restore_spots", f"Restored {updated} spots", request)
-        return Response({"restored": updated}, status=status.HTTP_200_OK)
-
-
-class ParkingSpotListCreateView(generics.ListCreateAPIView):
-    queryset = ParkingSpot.objects.all()
-    serializer_class = ParkingSpotSerializer
-    permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly, IsProviderOrAdmin]
 
     def perform_create(self, serializer):
         if self.request.user.role != 'provider' and not self.request.user.is_staff:
@@ -191,6 +171,23 @@ class ParkingSpotListCreateView(generics.ListCreateAPIView):
         instance.soft_delete()
         log_action(self.request.user, "soft_delete_spot",
                    f"Archived spot {instance.name}", self.request)
+
+    @action(detail=False, methods=["post"])
+    def bulk_archive(self, request):
+        ids = request.data.get("ids", [])
+        updated = ParkingSpot.objects.filter(
+            id__in=ids).update(is_active=False)
+        log_action(request.user, "bulk_archive_spots",
+                   f"Archived {updated} spots", request)
+        return Response({"archived": updated}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"])
+    def bulk_restore(self, request):
+        ids = request.data.get("ids", [])
+        updated = ParkingSpot.objects.filter(id__in=ids).update(is_active=True)
+        log_action(request.user, "bulk_restore_spots",
+                   f"Restored {updated} spots", request)
+        return Response({"restored": updated}, status=status.HTTP_200_OK)
 
 
 class NearbyParkingSpotsView(APIView):
@@ -399,6 +396,7 @@ class NavigateToSpotView(APIView):
 class SpotReviewCreateView(generics.CreateAPIView):
     serializer_class = SpotReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -410,6 +408,15 @@ class SpotAvailabilityLogListView(generics.ListAPIView):
     queryset = SpotAvailabilityLog.objects.all()
     serializer_class = SpotAvailabilityLogSerializer
     permission_classes = [permissions.IsAdminUser]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == "provider":
+            return SpotAvailabilityLog.objects.filter(
+                parking_spot__facility__provider=user).order_by("-created_at")
+        elif user.is_staff:
+            return SpotAvailabilityLog.objects.all().order_by("-created_at")
+        return SpotAvailabilityLog.objects.none()
 
 
 class SpotPriceLogView(generics.ListAPIView):
@@ -423,6 +430,7 @@ class SpotPriceLogView(generics.ListAPIView):
         elif user.is_staff:
             return SpotPriceLog.objects.all().order_by("-updated_at")
         return SpotPriceLog.objects.none()
+
 
 class ArchiveReportListView(generics.ListAPIView):
     serializer_class = ArchiveReportSerializer
