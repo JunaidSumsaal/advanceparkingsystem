@@ -1,13 +1,14 @@
 import React from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Tooltip, useDisclosure, Text } from '@chakra-ui/react';
-import { useAuth } from '../../../context/AuthContext';
 import type { User } from '../../../types/User';
 import Pagination from '../../../components/dashboard/pagination';
+import { useAdminUsers } from '../../../hooks/useAdminUsers';
 
 const Users = () => {
-  const { users, totalUsers, currentPage, totalPages, setCurrentPage } = useAuth();
+  const { users, currentPage, totalPages, setCurrentPage } = useAdminUsers();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [totalUsers] = React.useState(users.length);
 
   const handleUserClick = (user: User) => {
     setSelectedUser(user);
