@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   chakra,
@@ -11,16 +11,18 @@ import {
   IconButton,
   useColorModeValue,
   Image,
+  useToast,
 } from "@chakra-ui/react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { FaInstagram, FaTwitter, FaYoutube } from "react-icons/fa";
 import { BiMailSend } from "react-icons/bi";
-import Logo from '../../assets/header_logo.png';
+import Logo from "../../assets/header_logo.png";
+import { useAuth } from "../../hooks/useAuth";
 
 const SocialButton = ({
   children,
   label,
-  href
+  href,
 }: {
   children: ReactNode;
   label: string;
@@ -40,7 +42,7 @@ const SocialButton = ({
       justifyContent={"center"}
       transition={"background 0.3s ease"}
       _hover={{
-        bg: useColorModeValue("blackAlpha.200", "whiteAlpha.200")
+        bg: useColorModeValue("blackAlpha.200", "whiteAlpha.200"),
       }}
     >
       <VisuallyHidden>{label}</VisuallyHidden>
@@ -60,10 +62,50 @@ const ListHeader = ({ children }: { children: ReactNode }) => {
 export default function Footer() {
   const today = new Date();
   const currentYear = today.getFullYear().toString();
+  const { publicSubscribeNewsletter, loading: loader } = useAuth();
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(loader);
+  const toast = useToast();
+
+  const handleSubscribe = async () => {
+    if (!email) {
+      toast({
+        title: "Please enter an email",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await publicSubscribeNewsletter(email);
+      setEmail("");
+      toast({
+        title: "Subscribed successfully",
+        description: "You are now subscribed to our newsletter.",
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+        position: "top",
+      });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      toast({
+        title: "Subscription failed",
+        description: err?.response?.data?.email || "Please try again later.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+        position: "top",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
-    <Box
-      color={useColorModeValue("gray.700", "gray.200")}
-    >
+    <Box color={useColorModeValue("gray.700", "gray.200")}>
       <Container as={Stack} maxW={"6xl"} py={10}>
         <SimpleGrid
           templateColumns={{ sm: "1fr 1fr", md: "2fr 1fr 1fr 2fr" }}
@@ -71,8 +113,15 @@ export default function Footer() {
         >
           <Stack spacing={6}>
             <Box>
-              <Text as="h2" fontSize="2xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.400'}>
-                <Image src={Logo} alt='APS' h='30px' />
+              <Text
+                as="h2"
+                fontSize="2xl"
+                fontFamily="monospace"
+                fontWeight="bold"
+                className="flex gap-2"
+                color={"primary.400"}
+              >
+                <Image src={Logo} alt="APS" h="30px" />
                 APS
               </Text>
             </Box>
@@ -131,22 +180,28 @@ export default function Footer() {
             <ListHeader>Stay up to date</ListHeader>
             <Stack direction={"row"}>
               <Input
+                type="email"
                 placeholder={"Your email address"}
+                aria-label="Subscribe to newsletter"
                 bg={useColorModeValue("blackAlpha.100", "whiteAlpha.100")}
                 border={0}
                 focusBorderColor="primary.400"
                 _focus={{
-                  bg: "whiteAlpha.300"
+                  bg: "whiteAlpha.300",
                 }}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
               <IconButton
                 bg={useColorModeValue("primary.400", "primary.800")}
                 color={useColorModeValue("white", "gray.800")}
                 _hover={{
-                  bg: "primary.600"
+                  bg: "primary.600",
                 }}
                 aria-label="Subscribe"
                 icon={<BiMailSend />}
+                onClick={handleSubscribe}
+                isLoading={loading}
               />
             </Stack>
           </Stack>

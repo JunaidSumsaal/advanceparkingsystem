@@ -1,4 +1,3 @@
-// api.ts
 import axios from "axios";
 import Cookies from "js-cookie";
 import { API, SECURE } from "./constants";

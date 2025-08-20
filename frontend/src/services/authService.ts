@@ -49,8 +49,25 @@ export const refresh = async (refresh: string) => {
 
 // Admin: list users
 export const getUsers = async ({ page, limit }: { page: number; limit: number }) => {
-  const res = await apiHelper.get(`${ADMIN}/users/`, {
+  const res = await apiHelper.get(`${AUTH}/${ADMIN}/users/`, {
     params: { page, limit },
   });
   return res;
 };
+
+
+export const getNewsletterSubscription = async () => {
+  const res = await apiHelper.get(`${AUTH}/newsletter/`);
+  return res;
+};
+
+export const updateNewsletterSubscription = async (data: { subscribed: boolean }) => {
+  const res = await apiHelper.patch(`${AUTH}/newsletter/`, data);
+  return res;
+};
+
+export const subscribeToNewsletter = async (email: string) => {
+  const res = await api.post(`${AUTH}/newsletter/subscribe/`, { email });
+  return res.data;
+};
+

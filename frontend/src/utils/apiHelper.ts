@@ -51,6 +51,22 @@ const apiHelper = {
     }
   },
 
+  patch: async (url: string, data: object, config: object = {}) => {
+    try {
+      const response = await api.patch(url, data, {
+        ...config,
+        headers: {
+          Authorization: `Bearer ${Cookies.get('token')}`,
+          ...(config as any).headers,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("API PATCH error:", error);
+      throw error;
+    }
+  },
+
   delete: async (url: string, config: object = {}) => {
     try {
       const response = await api.delete(url, {

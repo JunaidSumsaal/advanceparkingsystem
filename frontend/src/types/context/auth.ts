@@ -24,4 +24,7 @@ export interface AuthContextType {
   totalPages?: number;
   currentPage?: number;
   setCurrentPage?: (page: number) => void;
+  publicSubscribeNewsletter: (email: string) => Promise<any>;
+  getMyNewsletter: () => Promise<any>;
+  updateMyNewsletter: (subscribed: boolean) => Promise<any>;
 }

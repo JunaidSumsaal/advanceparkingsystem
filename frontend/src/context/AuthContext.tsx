@@ -6,7 +6,15 @@ import React, {
   useContext,
 } from "react";
 import Cookies from "js-cookie";
-import { getMe, refresh, logout as apiLogout, register as apiRegister } from "../services/authService";
+import {
+  getMe,
+  refresh,
+  logout as apiLogout,
+  register as apiRegister,
+  updateNewsletterSubscription,
+  getNewsletterSubscription,
+  subscribeToNewsletter,
+} from "../services/authService";
 import type { User } from "../types/User";
 import type { AuthContextType } from "../types/context/auth";
 
@@ -18,7 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string[]> | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string[]> | null>(
+    null
+  );
 
   /** Login */
   const login = (access: string, refreshToken: string) => {
@@ -44,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setError(null);
         return response;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error("Registration failed", err);
 
@@ -104,6 +114,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  /** Newsletter: public subscription */
+  const publicSubscribeNewsletter = useCallback(async (email: string) => {
+    try {
+      const response = await subscribeToNewsletter(email);
+      return response;
+    } catch (err) {
+      console.error("Public subscription failed", err);
+      throw err;
+    }
+  }, []);
+
+  /** Newsletter: get current user subscription (auth only) */
+  const getMyNewsletter = useCallback(async () => {
+    try {
+      const response = await getNewsletterSubscription();
+      return response;
+    } catch (err) {
+      console.error("Fetching newsletter failed", err);
+      throw err;
+    }
+  }, []);
+
+  /** Newsletter: update current user subscription (auth only) */
+  const updateMyNewsletter = useCallback(async (subscribed: boolean) => {
+    try {
+      const response = await updateNewsletterSubscription({ subscribed });
+      return response;
+    } catch (err) {
+      console.error("Updating newsletter failed", err);
+      throw err;
+    }
+  }, []);
+
   /** On mount */
   useEffect(() => {
     if (Cookies.get("token")) {
@@ -136,6 +179,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setFormErrors,
         setError: (msg: string | null) => setError(msg),
         setUser: (userData: User | null) => setUser(userData),
+        publicSubscribeNewsletter,
+        getMyNewsletter,
+        updateMyNewsletter,
       }}
     >
       {children}
@@ -151,4 +197,3 @@ export const useAuthContext = () => {
   }
   return ctx;
 };
-
