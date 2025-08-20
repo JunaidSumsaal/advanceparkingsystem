@@ -4,6 +4,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     AuditLogListView,
     FacilityAttendantManageView,
+    NewsletterSubscriptionView,
+    PublicNewsletterSubscriptionView,
     RegisterView,
     ProfileView,
     AddAttendantView,
@@ -29,5 +31,7 @@ urlpatterns = [
         name='facility-attendants-manage'
     ),
     path("audit-logs/", AuditLogListView.as_view(), name="audit-logs"),
+    path("newsletter/", NewsletterSubscriptionView.as_view(), name="newsletter-user"),
+    path("newsletter/subscribe/", PublicNewsletterSubscriptionView.as_view(), name="newsletter-public"),
     path('', include(router.urls)),
 ]

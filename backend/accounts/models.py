@@ -10,10 +10,12 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('driver', 'Driver'),         # End-user looking for parking
         ('provider', 'Provider'),     # Parking spot owner / building manager
-        ('admin', 'Admin'),           # System admin (non-superuser but elevated permissions)
+        # System admin (non-superuser but elevated permissions)
+        ('admin', 'Admin'),
         ('attendant', 'Attendant'),   # Parking lot attendant
         ('guest', 'Guest'),           # Limited access
-        ('superuser', 'Superuser'),   # Full system control (maps to is_superuser=True)
+        # Full system control (maps to is_superuser=True)
+        ('superuser', 'Superuser'),
     ]
 
     role = models.CharField(
@@ -83,6 +85,7 @@ class User(AbstractUser):
             models.Index(fields=['role']),
         ]
 
+
 class AuditLog(models.Model):
     ACTIONS = [
         ("login", "Login"),
@@ -98,7 +101,8 @@ class AuditLog(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             null=True, blank=True, on_delete=models.SET_NULL)
     action = models.CharField(max_length=50, choices=ACTIONS, default="other")
     description = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -111,3 +115,17 @@ class AuditLog(models.Model):
     def __str__(self):
         return f"{self.user} -> {self.action} @ {self.timestamp}"
 
+
+class NewsletterSubscription(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name="newsletter_subscription"
+    )
+    email = models.EmailField(unique=True)
+    subscribed = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.email

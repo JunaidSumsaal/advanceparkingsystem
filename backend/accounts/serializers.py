@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import check_password
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import AuditLog, User
+from .models import AuditLog, NewsletterSubscription, User
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,3 +73,17 @@ class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
         fields = ["id", "user", "action", "description", "ip_address", "user_agent", "created_at"]
+
+
+class NewsletterSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsletterSubscription
+        fields = ["id", "user", "email", "subscribed", "created_at"]
+        read_only_fields = ["user", "created_at"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user if self.context["request"].user.is_authenticated else None
+        if user:
+            validated_data["user"] = user
+            validated_data["email"] = user.email
+        return super().create(validated_data)

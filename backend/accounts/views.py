@@ -1,8 +1,8 @@
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics, permissions, viewsets, status, filters
 from .utils import IsAdminOrFacilityProvider, log_action
-from .models import AuditLog, User
-from .serializers import AuditLogSerializer, UserSerializer, RegisterSerializer, AdminUserSerializer, ChangePasswordSerializer
+from .models import AuditLog, NewsletterSubscription, User
+from .serializers import AuditLogSerializer, NewsletterSubscriptionSerializer, UserSerializer, RegisterSerializer, AdminUserSerializer, ChangePasswordSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from parking.models import AttendantAssignmentLog, ParkingFacility
@@ -33,26 +33,33 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         role_filter = self.request.query_params.get('role')
         if role_filter:
             qs = qs.filter(role=role_filter)
-            log_action(self.request.user, "filter_users", f"Filtered users by role: {role_filter}", self.request.ip_address)
+            log_action(self.request.user, "filter_users",
+                       f"Filtered users by role: {role_filter}", self.request.ip_address)
 
         user = self.request.user
         if user.role == 'provider':
-            facility_ids = ParkingFacility.objects.filter(provider=user).values_list('id', flat=True)
+            facility_ids = ParkingFacility.objects.filter(
+                provider=user).values_list('id', flat=True)
             qs = qs.filter(assigned_facilities__id__in=facility_ids).distinct()
-            log_action(user, "view_users", f"Viewed users in facilities {facility_ids}", user.ip_address)
+            log_action(
+                user, "view_users", f"Viewed users in facilities {facility_ids}", user.ip_address)
         if user.role == 'attendant':
             qs = qs.filter(assigned_facilities__attendants=user).distinct()
-            log_action(user, "view_attendants", "Viewed assigned attendants", user.ip_address)
+            log_action(user, "view_attendants",
+                       "Viewed assigned attendants", user.ip_address)
         if user.is_staff:
             qs = qs.all()
-            log_action(user, "view_all_users", "Viewed all users", user.ip_address)
+            log_action(user, "view_all_users",
+                       "Viewed all users", user.ip_address)
         return qs
 
     def perform_destroy(self, instance):
         user = self.request.user
         if user.role == 'provider' and not instance.assigned_facilities.filter(provider=user).exists():
-            log_action(user, "delete_user_denied", f"Attempted to delete user {instance.username} without permission", user.ip_address)
-            raise PermissionDenied("You cannot delete users outside your facilities.")
+            log_action(user, "delete_user_denied",
+                       f"Attempted to delete user {instance.username} without permission", user.ip_address)
+            raise PermissionDenied(
+                "You cannot delete users outside your facilities.")
         instance.delete()
 
 
@@ -67,7 +74,8 @@ class AddAttendantView(generics.CreateAPIView):
             facilities = ParkingFacility.objects.filter(provider=user)
             for facility in facilities:
                 facility.attendants.add(attendant)
-            log_action(user, "attendant_added", f"Attendant {attendant.username} added", user.ip_address)
+            log_action(user, "attendant_added",
+                       f"Attendant {attendant.username} added", user.ip_address)
 
 
 class FacilityAttendantManageView(APIView):
@@ -82,9 +90,11 @@ class FacilityAttendantManageView(APIView):
     def get_facility(self, request, facility_id):
         facility = get_object_or_404(ParkingFacility, id=facility_id)
         if request.user.role == 'provider' and facility.provider != request.user:
-            log_action(request.user, "access_denied", "Unauthorized access to facility", request.user.ip_address)
+            log_action(request.user, "access_denied",
+                       "Unauthorized access to facility", request.user.ip_address)
             raise PermissionDenied("Not authorized for this facility.")
-        log_action(request.user, "access_facility", f"Accessed facility {facility.name}", request.user.ip_address)
+        log_action(request.user, "access_facility",
+                   f"Accessed facility {facility.name}", request.user.ip_address)
         return facility
 
     def get(self, request, facility_id):
@@ -92,25 +102,31 @@ class FacilityAttendantManageView(APIView):
         facility = self.get_facility(request, facility_id)
         attendants = facility.attendants.all()
         data = UserSerializer(attendants, many=True).data
-        log_action(request.user, "list_attendants", f"Listed attendants for facility {facility.name}", request.user.ip_address)
+        log_action(request.user, "list_attendants",
+                   f"Listed attendants for facility {facility.name}", request.user.ip_address)
         return Response(data)
 
     def post(self, request, facility_id):
         facility = self.get_facility(request, facility_id)
 
-        ids = request.data.get('attendant_ids') or request.data.get('attendant_id')
+        ids = request.data.get(
+            'attendant_ids') or request.data.get('attendant_id')
         if not ids:
-            log_action(request.user, "assign_attendant_error", "No attendant IDs provided", request.user.ip_address)
+            log_action(request.user, "assign_attendant_error",
+                       "No attendant IDs provided", request.user.ip_address)
             return Response({"detail": "No attendant IDs provided."}, status=400)
 
         if isinstance(ids, int):
             ids = [ids]
-            log_action(request.user, "assign_attendant_single", f"Assigning single attendant ID {ids[0]}", request.user.ip_address)
+            log_action(request.user, "assign_attendant_single",
+                       f"Assigning single attendant ID {ids[0]}", request.user.ip_address)
 
         attendants = User.objects.filter(id__in=ids, role='attendant')
-        new_attendants = [a for a in attendants if a not in facility.attendants.all()]
+        new_attendants = [
+            a for a in attendants if a not in facility.attendants.all()]
         facility.attendants.add(*new_attendants)
-        log_action(request.user, "assign_attendant", f"Assigned {len(new_attendants)} attendants to facility {facility.name}", request.user.ip_address)
+        log_action(request.user, "assign_attendant",
+                   f"Assigned {len(new_attendants)} attendants to facility {facility.name}", request.user.ip_address)
 
         for a in new_attendants:
             AttendantAssignmentLog.objects.create(
@@ -119,26 +135,31 @@ class FacilityAttendantManageView(APIView):
                 performed_by=request.user,
                 action='assigned'
             )
-        log_action(request.user, "attendant_assignment_log", f"Attendant assignment logged for {facility.name}", request.user.ip_address)
+        log_action(request.user, "attendant_assignment_log",
+                   f"Attendant assignment logged for {facility.name}", request.user.ip_address)
         return Response({"detail": f"Assigned {len(new_attendants)} attendant(s) to {facility.name}."})
 
     def delete(self, request, facility_id):
         """Remove attendants from facility."""
         facility = self.get_facility(request, facility_id)
 
-        ids = request.data.get('attendant_ids') or request.data.get('attendant_id')
+        ids = request.data.get(
+            'attendant_ids') or request.data.get('attendant_id')
         if not ids:
-            log_action(request.user, "remove_attendant_error", "No attendant IDs provided", request.user.ip_address)
+            log_action(request.user, "remove_attendant_error",
+                       "No attendant IDs provided", request.user.ip_address)
             return Response({"detail": "No attendant IDs provided."}, status=400)
 
         if isinstance(ids, int):
             ids = [ids]  # normalize to list
-            log_action(request.user, "remove_attendant_single", f"Removing single attendant ID {ids[0]}", request.user.ip_address)
+            log_action(request.user, "remove_attendant_single",
+                       f"Removing single attendant ID {ids[0]}", request.user.ip_address)
 
         attendants = User.objects.filter(id__in=ids, role='attendant')
 
         facility.attendants.remove(*attendants)
-        log_action(request.user, "remove_attendant", f"Removed {len(attendants)} attendants from facility {facility.name}", request.user.ip_address)
+        log_action(request.user, "remove_attendant",
+                   f"Removed {len(attendants)} attendants from facility {facility.name}", request.user.ip_address)
 
         for a in attendants:
             AttendantAssignmentLog.objects.create(
@@ -147,7 +168,8 @@ class FacilityAttendantManageView(APIView):
                 performed_by=request.user,
                 action='removed'
             )
-        log_action(request.user, "attendant_removal_log", f"Attendant removal logged for {facility.name}", request.user.ip_address)
+        log_action(request.user, "attendant_removal_log",
+                   f"Attendant removal logged for {facility.name}", request.user.ip_address)
         return Response({"detail": f"Removed {attendants.count()} attendant(s) from {facility.name}."})
 
 
@@ -159,11 +181,13 @@ class ChangePasswordView(generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        log_action(self.request.user, "change_password", "User requested password change", self.request)
+        log_action(self.request.user, "change_password",
+                   "User requested password change", self.request)
         return self.request.user
 
     def update(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer = self.get_serializer(
+            data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
         user = self.get_object()
@@ -193,6 +217,7 @@ class LogoutView(APIView):
 
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
 
+
 class AuditLogListView(generics.ListAPIView):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
@@ -210,3 +235,23 @@ class AuditLogListView(generics.ListAPIView):
         if user_id:
             qs = qs.filter(user_id=user_id)
         return qs
+
+
+class NewsletterSubscriptionView(generics.RetrieveUpdateAPIView):
+    serializer_class = NewsletterSubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        obj, _ = NewsletterSubscription.objects.get_or_create(
+            user=self.request.user, 
+            defaults={"email": self.request.user.email}
+        )
+        return obj
+
+
+class PublicNewsletterSubscriptionView(generics.CreateAPIView):
+    serializer_class = NewsletterSubscriptionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        serializer.save()
