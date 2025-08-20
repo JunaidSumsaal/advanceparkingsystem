@@ -1,66 +1,112 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import Cookies from 'js-cookie';
-import { getMe, refresh, logout as apiLogout } from '../services/authService';
-import type { User } from '../types/User';
-import type { AuthContextType } from '../types/context/auth';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
+import Cookies from "js-cookie";
+import { getMe, refresh, logout as apiLogout, register as apiRegister } from "../services/authService";
+import type { User } from "../types/User";
+import type { AuthContextType } from "../types/context/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string[]> | null>(null);
 
   /** Login */
   const login = (access: string, refreshToken: string) => {
-    Cookies.set('token', access);
-    Cookies.set('refresh', refreshToken);
+    Cookies.set("token", access);
+    Cookies.set("refresh", refreshToken);
     fetchUser(); // immediately load profile
+    setLoading(false);
+    setError(null);
   };
+
+  /** Register */
+  const register = useCallback(
+    async (userData: { username: string; email: string; password: string }) => {
+      try {
+        const response = await apiRegister(userData);
+        console.log("Registration response ->:", response);
+
+        if (response && response.status === 201) {
+          // Automatically log in after registration
+          login(response.access, response.refresh);
+          fetchUser(); // Load user profile
+        }
+
+        setError(null);
+        return response;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        console.error("Registration failed", err);
+
+        // handle both string message + field validation errors
+        if (err.response?.data) {
+          setError(err.response.data);
+          setFormErrors(err.response.data);
+        } else {
+          setError("Registration failed");
+        }
+
+        throw err;
+      }
+    },
+    []
+  );
 
   /** Logout */
   const logout = useCallback(async () => {
     try {
       await apiLogout();
     } catch (err) {
-      console.error('Logout failed', err);
+      console.error("Logout failed", err);
+      setError("Logout failed");
     }
-    Cookies.remove('refresh');
-    Cookies.remove('token');
+    Cookies.remove("refresh");
+    Cookies.remove("token");
     setUser(null);
+    setLoading(false);
+    setError(null);
   }, []);
 
   /** Refresh token */
   const refreshAccessToken = useCallback(async () => {
     try {
-      const data = await refresh(Cookies.get('refresh') || '');
+      const data = await refresh(Cookies.get("refresh") || "");
       const { access, refresh: newRefresh } = data;
-      Cookies.set('token', access);
-      Cookies.set('refresh', newRefresh);
+      Cookies.set("token", access);
+      Cookies.set("refresh", newRefresh);
     } catch (err) {
-      console.error('Error refreshing token', err);
+      console.error("Error refreshing token", err);
       logout();
     }
   }, [logout]);
 
   /** Fetch current user */
   const fetchUser = useCallback(async () => {
-  try {
-    const user = await getMe()
-    setUser(user);
-    setError(null);
-  } catch (err) {
-    console.error("Error fetching user", err);
-    setError("Failed to fetch user");
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
+    try {
+      const user = await getMe();
+      setUser(user);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching user", err);
+      setError("Failed to fetch user");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   /** On mount */
   useEffect(() => {
-    if (Cookies.get('token')) {
+    if (Cookies.get("token")) {
       fetchUser().catch(() => refreshAccessToken());
     } else {
       setLoading(false);
@@ -77,7 +123,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, refreshAccessToken, loading, error }}
+      value={{
+        user,
+        login,
+        logout,
+        register,
+        refreshAccessToken,
+        loading,
+        error,
+        formErrors,
+        setLoading,
+        setFormErrors,
+        setError: (msg: string | null) => setError(msg),
+        setUser: (userData: User | null) => setUser(userData),
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -88,7 +147,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuthContext = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    throw new Error('useAuthContext must be used within AuthProvider');
+    throw new Error("useAuthContext must be used within AuthProvider");
   }
   return ctx;
 };
+
