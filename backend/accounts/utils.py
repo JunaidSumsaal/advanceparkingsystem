@@ -1,7 +1,9 @@
 from .models import AuditLog
 from rest_framework.permissions import BasePermission
-from rest_framework.pagination import PageNumberPagination
 from parking.models import ParkingFacility
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class IsAdminOrFacilityProvider(BasePermission):
@@ -43,14 +45,17 @@ class IsAdminOrSuperuser(BasePermission):
 class IsAttendantOrDriver(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['attendant', 'driver']
-    
+
+
 class IsDriver(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['driver']
 
+
 class IsAttendant(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['attendant']
+
 
 def log_action(user, action, description="", request=None):
     ip = None
@@ -64,4 +69,15 @@ def log_action(user, action, description="", request=None):
         description=description,
         ip_address=ip,
         user_agent=agent
+    )
+
+    logger.info(
+        description,
+        extra={
+            "user": getattr(user, "username", "anonymous" if not user or not user.is_authenticated else user.username),
+            "action": action,
+            "ip": ip,
+            "user_agent": agent,
+            "session_id": getattr(request, "session", {}).session_key if request and hasattr(request, "session") else None,
+        }
     )
