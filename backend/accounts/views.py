@@ -7,7 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from parking.models import AttendantAssignmentLog, ParkingFacility
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.db.models import Count
 from rest_framework.exceptions import PermissionDenied
+import csv
+from django.http import HttpResponse
 
 
 class RegisterView(generics.CreateAPIView):
@@ -224,18 +228,55 @@ class AuditLogListView(generics.ListAPIView):
     permission_classes = [permissions.IsAdminUser]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["action", "description", "user__username", "ip_address"]
-    ordering_fields = ["created_at", "user"]
+    ordering_fields = ["created_at", "user", "timestamp"]
 
     def get_queryset(self):
         qs = super().get_queryset()
         category = self.request.query_params.get("category")
         user_id = self.request.query_params.get("user")
+        start = self.request.query_params.get("start")
+        end = self.request.query_params.get("end")
         if category:
             qs = qs.filter(category=category)
         if user_id:
             qs = qs.filter(user_id=user_id)
+        if start:
+            qs = qs.filter(timestamp__gte=start)
+        if end:
+            qs = qs.filter(timestamp__lte=end)
         return qs
 
+class AuditLogExportView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        logs = AuditLog.objects.all().order_by('-timestamp')
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="audit_logs.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(["User", "Action", "Description", "IP", "Timestamp"])
+        for log in logs:
+            writer.writerow([log.user, log.action, log.description, log.ip_address, log.timestamp])
+
+        return response
+
+class AuditLogSummaryView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        days = int(request.query_params.get("days", 7))
+        since = timezone.now() - timezone.timedelta(days=days)
+
+        qs = AuditLog.objects.filter(timestamp__gte=since)
+        summary = (
+            qs.values("action")
+              .annotate(count=Count("id"))
+              .order_by("-count")
+        )
+
+        return Response(summary)
 
 class NewsletterSubscriptionView(generics.RetrieveUpdateAPIView):
     serializer_class = NewsletterSubscriptionSerializer

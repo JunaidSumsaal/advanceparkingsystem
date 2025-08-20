@@ -43,6 +43,14 @@ class IsAdminOrSuperuser(BasePermission):
 class IsAttendantOrDriver(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in ['attendant', 'driver']
+    
+class IsDriver(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in ['driver']
+
+class IsAttendant(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in ['attendant']
 
 def log_action(user, action, description="", request=None):
     ip = None

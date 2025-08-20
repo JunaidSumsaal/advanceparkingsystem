@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
+    AuditLogExportView,
     AuditLogListView,
     FacilityAttendantManageView,
     NewsletterSubscriptionView,
@@ -30,7 +31,8 @@ urlpatterns = [
         FacilityAttendantManageView.as_view(),
         name='facility-attendants-manage'
     ),
-    path("audit-logs/", AuditLogListView.as_view(), name="audit-logs"),
+    path("logs/", AuditLogListView.as_view(), name="audit-log-list"),
+    path("logs/export/", AuditLogExportView.as_view(), name="audit-log-export"),
     path("newsletter/", NewsletterSubscriptionView.as_view(), name="newsletter-user"),
     path("newsletter/subscribe/", PublicNewsletterSubscriptionView.as_view(), name="newsletter-public"),
     path('', include(router.urls)),

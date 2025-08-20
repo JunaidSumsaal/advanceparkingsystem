@@ -6,7 +6,7 @@ from .models import AuditLog, NewsletterSubscription, User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'default_radius_km']
+        fields = ['id', 'username', 'email', 'role', 'default_radius_km', "is_staff", "is_superuser"]
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
