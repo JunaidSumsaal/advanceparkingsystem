@@ -46,8 +46,7 @@ export default function Register() {
     if (isAuthenticated) {
       navigate("/dashboard");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserData({ ...userData, [e.target.id]: e.target.value });

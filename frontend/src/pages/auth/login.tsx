@@ -40,7 +40,7 @@ export default function Login() {
     if (isAuthenticated ) {
       navigate('/dashboard')
     }
-  },[]);
+  },[isAuthenticated, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials({
@@ -53,8 +53,6 @@ export default function Login() {
     e.preventDefault();
     try {
       const response = await loginService(credentials);
-
-  
       if (response.access && response.refresh) {
         authLogin(response.access, response.refresh);
   

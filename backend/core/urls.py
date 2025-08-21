@@ -15,5 +15,5 @@ urlpatterns = [
     path('api/parking/', include('parking.urls')),
     path('api/notifications/', include('notifications.urls')),
     path("api/metrics/", metrics_view, name="metrics"),
-    path('api/dashboard', include('dashboard.urls')),
+    path('api/dashboard/', include('dashboard.urls')),
 ] + router.urls

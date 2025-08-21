@@ -11,9 +11,10 @@ import {
   refresh,
   logout as apiLogout,
   register as apiRegister,
-  updateNewsletterSubscription,
-  getNewsletterSubscription,
-  subscribeToNewsletter,
+  updateNewsletter,
+  getNewsletter,
+  subscribeNewsletter,
+  updateProfile,
 } from "../services/authService";
 import type { User } from "../types/User";
 import type { AuthContextType } from "../types/context/auth";
@@ -34,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = (access: string, refreshToken: string) => {
     Cookies.set("token", access);
     Cookies.set("refresh", refreshToken);
-    fetchUser(); // immediately load profile
+    fetchUser();
     setLoading(false);
     setError(null);
   };
@@ -44,12 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     async (userData: { username: string; email: string; password: string }) => {
       try {
         const response = await apiRegister(userData);
-        console.log("Registration response ->:", response);
 
         if (response && response.status === 201) {
-          // Automatically log in after registration
           login(response.access, response.refresh);
-          fetchUser(); // Load user profile
+          fetchUser();
         }
 
         setError(null);
@@ -58,7 +57,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (err: any) {
         console.error("Registration failed", err);
 
-        // handle both string message + field validation errors
         if (err.response?.data) {
           setError(err.response.data);
           setFormErrors(err.response.data);
@@ -69,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw err;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -117,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   /** Newsletter: public subscription */
   const publicSubscribeNewsletter = useCallback(async (email: string) => {
     try {
-      const response = await subscribeToNewsletter(email);
+      const response = await subscribeNewsletter(email);
       return response;
     } catch (err) {
       console.error("Public subscription failed", err);
@@ -128,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   /** Newsletter: get current user subscription (auth only) */
   const getMyNewsletter = useCallback(async () => {
     try {
-      const response = await getNewsletterSubscription();
+      const response = await getNewsletter();
       return response;
     } catch (err) {
       console.error("Fetching newsletter failed", err);
@@ -139,13 +138,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   /** Newsletter: update current user subscription (auth only) */
   const updateMyNewsletter = useCallback(async (subscribed: boolean) => {
     try {
-      const response = await updateNewsletterSubscription({ subscribed });
+      const response = await updateNewsletter({ subscribed });
       return response;
     } catch (err) {
       console.error("Updating newsletter failed", err);
       throw err;
     }
   }, []);
+
+  /** Update user profile */
+const profilesUpdate = useCallback(async (updateData: Partial<User>) => {
+  try {
+    await updateProfile(updateData);
+    // Merge updates into local user state
+    setUser((prev) => prev ? { ...prev, ...updateData } : prev);
+    setError(null);
+  } catch (err) {
+    console.error("Error updating profile", err);
+    setError("Failed to update profile");
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   /** On mount */
   useEffect(() => {
@@ -182,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         publicSubscribeNewsletter,
         getMyNewsletter,
         updateMyNewsletter,
+        profilesUpdate,
       }}
     >
       {children}

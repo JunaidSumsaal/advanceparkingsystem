@@ -27,4 +27,5 @@ export interface AuthContextType {
   publicSubscribeNewsletter: (email: string) => Promise<any>;
   getMyNewsletter: () => Promise<any>;
   updateMyNewsletter: (subscribed: boolean) => Promise<any>;
+  profilesUpdate: (updateData: Partial<User>) => Promise<void>;
 }

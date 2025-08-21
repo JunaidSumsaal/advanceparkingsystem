@@ -63,8 +63,13 @@ def log_action(user, action, description="", request=None):
     if request:
         ip = request.META.get("REMOTE_ADDR")
         agent = request.META.get("HTTP_USER_AGENT", "")
+
+    username = "anonymous"
+    if user and hasattr(user, "is_authenticated") and user.is_authenticated:
+        username = getattr(user, "username", "unknown")
+
     AuditLog.objects.create(
-        user=user if user.is_authenticated else None,
+        user=user if user and user.is_authenticated else None,
         action=action,
         description=description,
         ip_address=ip,
@@ -74,10 +79,10 @@ def log_action(user, action, description="", request=None):
     logger.info(
         description,
         extra={
-            "user": getattr(user, "username", "anonymous" if not user or not user.is_authenticated else user.username),
+            "user": username,
             "action": action,
             "ip": ip,
             "user_agent": agent,
-            "session_id": getattr(request, "session", {}).session_key if request and hasattr(request, "session") else None,
+            "session_id": getattr(getattr(request, "session", None), "session_key", None)
         }
     )

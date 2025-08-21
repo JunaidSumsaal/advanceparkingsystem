@@ -1,8 +1,7 @@
 import api from './api';
-import type { User, Credentials } from '../types/User';
-import { AUTH, ADMIN } from './constants';
 import apiHelper from '../utils/apiHelper';
-
+import { AUTH, ADMIN, NEWSLETTER, NEWSLETTER_SUBSCRIBE } from './constants';
+import type { User, Credentials } from '../types/User';
 
 // Login
 export const login = async ({ username, password }: Partial<Credentials>) => {
@@ -16,20 +15,18 @@ export const register = async (userData: Partial<User> & { password: string }) =
   return res.data;
 };
 
-// Profile (get current user)
+// Profile
 export const getMe = async () => {
   const res = await apiHelper.get(`${AUTH}/profile/`);
-  return res;      
+  return res;
 };
 
-
-// Update profile (same endpoint, usually PUT or PATCH)
 export const updateProfile = async (updateData: Partial<User>) => {
   const res = await apiHelper.put(`${AUTH}/profile/`, updateData);
   return res;
 };
 
-// Change password
+// Change Password
 export const changePassword = async (oldPassword: string, newPassword: string) => {
   const res = await apiHelper.post(`${AUTH}/change-password/`, { oldPassword, newPassword });
   return res;
@@ -41,33 +38,40 @@ export const logout = async () => {
   return res;
 };
 
-// Refresh token
+// Refresh Token
 export const refresh = async (refresh: string) => {
   const res = await apiHelper.post(`${AUTH}/refresh/`, { refresh });
   return res;
 };
 
-// Admin: list users
-export const getUsers = async ({ page, limit }: { page: number; limit: number }) => {
-  const res = await apiHelper.get(`${AUTH}/${ADMIN}/users/`, {
-    params: { page, limit },
-  });
+// Admin Users
+export const getAdminUsers = async ({ page = 1, limit = 20 }) => {
+  const res = await apiHelper.get(`${AUTH}${ADMIN}/users/`, { params: { page, limit } });
   return res;
 };
 
-
-export const getNewsletterSubscription = async () => {
-  const res = await apiHelper.get(`${AUTH}/newsletter/`);
+export const getAdminUser = async (id: number) => {
+  const res = await apiHelper.get(`${AUTH}${ADMIN}/users/${id}/`);
   return res;
 };
 
-export const updateNewsletterSubscription = async (data: { subscribed: boolean }) => {
-  const res = await apiHelper.patch(`${AUTH}/newsletter/`, data);
+export const addAttendant = async (data: { username: string; email: string; password: string; facility: number }) => {
+  const res = await apiHelper.post(`${AUTH}${ADMIN}/users/add-attendant/`, data);
   return res;
 };
 
-export const subscribeToNewsletter = async (email: string) => {
-  const res = await api.post(`${AUTH}/newsletter/subscribe/`, { email });
+// Newsletter
+export const getNewsletter = async () => {
+  const res = await apiHelper.get(`${AUTH}${NEWSLETTER}/`);
+  return res;
+};
+
+export const updateNewsletter = async (data: { subscribed: boolean }) => {
+  const res = await apiHelper.patch(`${AUTH}${NEWSLETTER}/`, data);
+  return res;
+};
+
+export const subscribeNewsletter = async (email: string) => {
+  const res = await api.post(`${AUTH}${NEWSLETTER_SUBSCRIBE}/`, { email });
   return res.data;
 };
-

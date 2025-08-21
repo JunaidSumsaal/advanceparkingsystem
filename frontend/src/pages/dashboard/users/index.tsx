@@ -6,6 +6,7 @@ import { useAdminUsers } from '../../../hooks/useAdminUsers';
 
 const Users = () => {
   const { users, currentPage, totalPages, setCurrentPage } = useAdminUsers();
+  console.log("Users data:", users);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [totalUsers] = React.useState(users.length);

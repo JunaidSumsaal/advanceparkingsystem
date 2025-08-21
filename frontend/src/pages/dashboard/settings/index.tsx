@@ -1,50 +1,59 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Input, FormControl, FormLabel, VStack, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { updateProfile } from '../../../services/authService';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuthContext } from '../../../context/AuthContext';
 
 const Settings = () => {
-  const { user } = useAuth();
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const { user, profilesUpdate } = useAuthContext();
+  const [username, setUserName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const toast = useToast();
-  const history = useNavigate();
+  const navigate = useNavigate();
+
+  // Initialize form fields with current user info
+  useEffect(() => {
+    if (user) {
+      setUserName(user.username || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateProfile({ name, email, password });
-      toast({
-        title: "Profile updated",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-        position: 'top'
-      });
-      history('/dashboard');
-    } catch (error: any) {
-      toast({
-        title: "Error updating profile",
-        description: error.response?.data?.message || "Something went wrong while updating your profile.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: 'top'
-      });
-    }
-  };
+  e.preventDefault();
+
+  try {
+    await profilesUpdate({ username, email, password: password || undefined });
+    toast({
+      title: "Profile updated",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+      position: 'top'
+    });
+    navigate('/dashboard');
+  } catch (error: any) {
+    toast({
+      title: "Error updating profile",
+      description: error.response?.data?.message || "Something went wrong.",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+      position: 'top'
+    });
+  }
+};
+
 
   return (
-    <VStack spacing={4} align="stretch">
-      <FormControl id="name">
-        <FormLabel>Name</FormLabel>
+    <VStack spacing={4} align="stretch" as="form" onSubmit={handleSubmit}>
+      <FormControl id="username">
+        <FormLabel>Username</FormLabel>
         <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your name"
+          value={username}
+          onChange={(e) => setUserName(e.target.value)}
+          placeholder="Enter your username"
         />
       </FormControl>
       <FormControl id="email">
@@ -64,7 +73,7 @@ const Settings = () => {
           placeholder="Change your password (optional)"
         />
       </FormControl>
-      <Button colorScheme="blue" onClick={handleSubmit}>
+      <Button colorScheme="blue" type="submit">
         Update Profile
       </Button>
     </VStack>

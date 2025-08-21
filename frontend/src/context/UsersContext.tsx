@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getUsers } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
+import { getAdminUsers } from "../services/authService";
 
 interface User {
   id: number;
@@ -45,7 +45,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await getUsers((params as any));
+      const res = await getAdminUsers((params as any));
       setUsers(res.results || res.data || []); // adapt to API shape
       setTotalPages(res.total_pages || res.totalPages || 1);
       setError(null);
