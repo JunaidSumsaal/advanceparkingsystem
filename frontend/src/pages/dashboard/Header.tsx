@@ -36,8 +36,8 @@ const Header = () => {
 
   useEffect(() => {
     if (user) {
-      setUserName(user.username);
-      setEmail(user.email);
+      setUserName(user.username ?? "")
+      setEmail(user.email ?? "")
     }
   }, [user]);
 
