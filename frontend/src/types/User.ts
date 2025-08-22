@@ -1,5 +1,5 @@
 export interface User {
-  id?: number | string | null;
+  id: number | string | null;
   username?: string | null;
   email?: string;
   password?: string | null;
@@ -15,7 +15,7 @@ export interface User {
   is_active?: boolean;
   is_staff?: boolean;
   is_superuser?: boolean;
-  role?: string;
+  role: string;
   default_radius_km?: string
 }
 
