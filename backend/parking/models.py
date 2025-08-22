@@ -261,6 +261,7 @@ class SpotPredictionLog(models.Model):
     predicted_for_time = models.DateTimeField()
     model_version = models.CharField(max_length=50, default='v1')
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         indexes = [
