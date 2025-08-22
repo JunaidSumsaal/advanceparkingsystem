@@ -23,7 +23,9 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,8 +47,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await getAdminUsers((params as any));
-      setUsers(res.results || res.data || []); // adapt to API shape
+      const res = await getAdminUsers();
+      setUsers(res || []);
       setTotalPages(res.total_pages || res.totalPages || 1);
       setError(null);
     } catch (err) {
@@ -55,10 +57,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadUsers();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, roleFilter]);
 
   return (
