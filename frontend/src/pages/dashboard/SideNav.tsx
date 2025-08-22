@@ -14,25 +14,55 @@ import {
 import {
   BarChart3,
   LayoutDashboard,
-  CreditCard,
+  User,
+  Settings,
+  MapPin,
+  BookCheckIcon,
 } from "lucide-react";
-import type { BoxProps} from "@chakra-ui/react";
+import type { BoxProps } from "@chakra-ui/react";
 import { type IconType } from "react-icons";
 import { useState } from "react";
 import { FiHome } from "react-icons/fi";
-import Logo from '../../assets/header_logo.png';
-import { Link as RouterLink } from 'react-router-dom';
-
+import Logo from "../../assets/header_logo.png";
+import { Link as RouterLink } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 interface SidebarProps extends BoxProps {
   onClose: () => void;
 }
 
-const LinkItems: Array<{ name: string; icon: IconType; path: string }> = [
+const LinkItems: Array<{
+  name: string;
+  icon: IconType;
+  path: string;
+  roles?: string[];
+}> = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { name: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
-  { name: "Expenses", icon: CreditCard, path: "/dashboard/expenses" },
+  {
+    name: "Metrics",
+    icon: BarChart3,
+    path: "/dashboard/metrics",
+    roles: ["admin", "provider"],
+  },
+  {
+    name: "Bookings",
+    icon: BookCheckIcon,
+    path: "/dashboard/booking",
+    roles: ["admin", "provider", "attendant", "driver"],
+  },
+  {
+    name: "Maps",
+    icon: MapPin,
+    path: "/dashboard/maps",
+    roles: ["admin", "provider", "driver"],
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    path: "/dashboard/settings",
+    roles: ["admin", "provider", "attendant", "driver"],
+  },
+  { name: "Users", icon: User, path: "/dashboard/users", roles: ["admin"] },
 ];
-
 
 const SidebarContent = ({
   onClose,
@@ -43,6 +73,9 @@ const SidebarContent = ({
   activeLink: string;
   onLinkClick: (name: string) => void;
 }) => {
+  const { user } = useAuth();
+
+
   return (
     <Box
       transition="3s ease"
@@ -57,13 +90,23 @@ const SidebarContent = ({
       {...rest}
     >
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-        <Text as="h2" fontSize="xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.300'}>
-          <Image src={Logo} alt='APS' h='30px' />
+        <Text
+          as="h2"
+          fontSize="xl"
+          fontFamily="monospace"
+          fontWeight="bold"
+          className="flex gap-2"
+          color={"primary.300"}
+        >
+          <Image src={Logo} alt="APS" h="30px" />
           APS
         </Text>
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
-      {LinkItems.map((link) => (
+
+      {LinkItems.filter(
+        (link) => !link.roles || link.roles.includes(user?.role.toLowerCase() ?? "")
+      ).map((link) => (
         <NavItem
           key={link.name}
           icon={link.icon}
@@ -93,7 +136,12 @@ const NavItem = ({
   onClick: () => void;
 }) => {
   return (
-    <Box as={RouterLink} to={to} onClick={onClick} _hover={{ textDecoration: 'none' }}>
+    <Box
+      as={RouterLink}
+      to={to}
+      onClick={onClick}
+      _hover={{ textDecoration: "none" }}
+    >
       <Flex
         align="center"
         p="4"
@@ -120,7 +168,6 @@ const NavItem = ({
     </Box>
   );
 };
-
 
 const Sidebar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
