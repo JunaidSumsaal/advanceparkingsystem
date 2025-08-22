@@ -1,12 +1,10 @@
 import React from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Tooltip, useDisclosure, Text } from '@chakra-ui/react';
 import type { User } from '../../../types/User';
-import Pagination from '../../../components/dashboard/pagination';
 import { useAdminUsers } from '../../../hooks/useAdminUsers';
 
 const Users = () => {
-  const { users, currentPage, totalPages, setCurrentPage } = useAdminUsers();
-  console.log("Users data:", users);
+  const { users } = useAdminUsers();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [totalUsers] = React.useState(users.length);
@@ -16,17 +14,11 @@ const Users = () => {
     onOpen();
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   return (
     <Box p={5} bg={'white'}>
       {/* Pagination Controls */}
       <Box mb={4} textAlign="center" display={'flex'} justifyContent={'space-between'} alignItems={'center'} mx={4}>
-        <Pagination currentPage={currentPage} totalPages={totalPages} handlePageChange={handlePageChange} />
         <Text color={'gray.400'} fontSize={'md'}>
           {totalUsers} Total Users
         </Text>
