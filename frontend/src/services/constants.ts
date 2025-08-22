@@ -7,8 +7,11 @@ export const ADMIN = `/admin`;
 export const DASHBOARD = `/dashboard`;
 export const PARKING = `/parking`;
 export const NOTIFICATIONS = `/notifications`;
+export const metrics = `/metrics`;
 
 // Dashboard sub-routes
+export const DASH_ADMIN = `/dashboard/admin`;
+export const DASH_ADMIN_USERS = `/dashboard/admin/users`;
 export const DASH_DRIVER = `/dashboard/driver`;
 export const DASH_ATTENDANT = `/dashboard/attendant`;
 export const DASH_PROVIDER = `/dashboard/provider`;
