@@ -1,347 +1,253 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { useEffect } from "react";
 import {
   Box,
   Card,
   CardBody,
   CardHeader,
   Text,
-  Spinner,
-  Center,
-  Button,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  VStack,
   HStack,
-  useToast,
+  Avatar,
+  Divider,
 } from "@chakra-ui/react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+import dayjs from "dayjs";
 import { useDashboard } from "../../../hooks/useDashboard";
+import Dash from "../../../components/loader/dashboard";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+const COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444"];
 
-const Overview = () => {
-  const toast = useToast();
-  const { provider, fetchProvider, spotReports, fetchSpotReports, loading } =
-    useDashboard();
+const AdminOverview = () => {
+  const { admin, fetchAdmin, loading } = useDashboard();
 
-  // Monthly bookings
-  const [monthlyBookings, setMonthlyBookings] = useState<any[]>([]);
-  const [bookingsPage, setBookingsPage] = useState(1);
-  const [bookingsTotalPages, setBookingsTotalPages] = useState(1);
-  const bookingsPerPage = 7; // Show one week per page
-  const [paginatedBookings, setPaginatedBookings] = useState<any[]>([]);
-
-  // Spot evaluation reports
-  const [reportsPage, setReportsPage] = useState(1);
-  const [reportsTotalPages, setReportsTotalPages] = useState(1);
-  const reportsPerPage = 5;
-  const [paginatedReports, setPaginatedReports] = useState<any[]>([]);
-
-  // Fetch provider metrics and spot reports
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await fetchProvider();
-        await fetchSpotReports();
+    fetchAdmin();
+  }, [fetchAdmin]);
 
-        // Null-safe daily bookings
-        const dailyBookings = provider?.dailyBookings ?? [];
-        const monthlyData = dailyBookings.map((b: any) => ({
-          month: new Date(b?.day ?? Date.now()).toLocaleDateString("default", {
-            month: "short",
-            day: "numeric",
-          }),
-          bookings: b?.count ?? 0,
-        }));
-        setMonthlyBookings(monthlyData);
-
-        // Paginate bookings for table/list
-        const totalBookingPages =
-          Math.ceil(monthlyData.length / bookingsPerPage) || 1;
-        setBookingsTotalPages(totalBookingPages);
-        const bookingStart = (bookingsPage - 1) * bookingsPerPage;
-        const bookingEnd = bookingStart + bookingsPerPage;
-        setPaginatedBookings(monthlyData.slice(bookingStart, bookingEnd));
-
-        // Paginate reports
-        const totalReportPages =
-          Math.ceil((spotReports?.length ?? 0) / reportsPerPage) || 1;
-        setReportsTotalPages(totalReportPages);
-        const reportStart = (reportsPage - 1) * reportsPerPage;
-        const reportEnd = reportStart + reportsPerPage;
-        setPaginatedReports((spotReports ?? []).slice(reportStart, reportEnd));
-      } catch (err: any) {
-        toast({
-          title: "Error loading dashboard",
-          description: err?.response?.data?.message || "Something went wrong.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-          position: "top",
-        });
-      }
-    };
-    fetchData();
-  }, [
-    fetchProvider,
-    fetchSpotReports,
-    provider?.dailyBookings,
-    spotReports,
-    bookingsPage,
-    reportsPage,
-    toast,
-  ]);
-
-  // Pagination handlers
-  const handleBookingsPrev = () =>
-    setBookingsPage((prev) => Math.max(prev - 1, 1));
-  const handleBookingsNext = () =>
-    setBookingsPage((prev) => Math.min(prev + 1, bookingsTotalPages));
-  const handleReportsPrev = () =>
-    setReportsPage((prev) => Math.max(prev - 1, 1));
-  const handleReportsNext = () =>
-    setReportsPage((prev) => Math.min(prev + 1, reportsTotalPages));
-
-  if (loading || !provider) {
-    return (
-      <Center minH="400px">
-        <Spinner size="xl" color="primary.400" />
-      </Center>
-    );
+  if (loading || !admin) {
+    return <Dash />;
   }
 
-  // Metrics with null-safeguards
-  const totalBookings = provider?.totalBookings ?? 0;
-  const totalSpots = provider?.spotsCount ?? 0;
-  const availableSpots = totalSpots - (totalBookings || 0);
-  const managedFacilities = provider?.facilitiesCount ?? 0;
+  // Merge recent bookings + users into timeline
+  const timeline = [
+    ...admin.recent_activity.bookings.map((b) => ({
+      type: "booking",
+      id: b.id,
+      user: b.user__email,
+      facility: b.parking_spot__facility__name,
+      time: b.start_time,
+    })),
+    ...admin.recent_activity.users.map((u) => ({
+      type: "user",
+      id: u.id,
+      email: u.email,
+      role: u.role,
+      time: u.date_joined,
+    })),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
   return (
-    <Box className="flex-1 space-y-8 p-8 pt-6">
-      {/* Metrics */}
+    <Box className="p-4 md:p-8 space-y-8">
+      {/* Top metrics */}
       <Box className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard title="Total Users" amount={admin.total_users} />
+        <MetricCard title="Total Facilities" amount={admin.total_facilities} />
+        <MetricCard title="Total Spots" amount={admin.total_spots} />
+        <MetricCard title="Total Bookings" amount={admin.total_bookings} />
+      </Box>
+
+      {/* AI Stats */}
+      <Box className="grid gap-4 md:grid-cols-2">
         <MetricCard
-          title="Total Bookings"
-          amount={totalBookings}
-          progress={70}
+          title="Prediction Logs"
+          amount={admin.ai_stats.prediction_logs}
         />
         <MetricCard
-          title="Available Spots"
-          amount={availableSpots}
-          progress={totalSpots ? (availableSpots / totalSpots) * 100 : 0}
-        />
-        <MetricCard
-          title="Occupied Spots"
-          amount={totalSpots - availableSpots}
-          progress={
-            totalSpots ? ((totalSpots - availableSpots) / totalSpots) * 100 : 0
-          }
-        />
-        <MetricCard
-          title="Managed Facilities"
-          amount={managedFacilities}
-          progress={80}
+          title="Availability Logs"
+          amount={admin.ai_stats.availability_logs}
         />
       </Box>
 
-      {/* Charts */}
-      <Box className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Monthly Bookings */}
-        <Card className="col-span-4">
+      {/* Charts in responsive grid */}
+      <Box className="grid gap-6 lg:grid-cols-2">
+        {/* User breakdown */}
+        <Card>
           <CardHeader>
-            <Text>Monthly Booking Trends</Text>
+            <Text fontWeight="semibold">User Breakdown</Text>
           </CardHeader>
           <CardBody>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyBookings}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const index = monthlyBookings.findIndex(
-                        (m) => m.month === label
-                      );
-                      const cumulative = monthlyBookings
-                        .slice(0, index + 1)
-                        .reduce((sum, m) => sum + (m.bookings ?? 0), 0);
-                      return (
-                        <Box
-                          p={2}
-                          bg="white"
-                          border="1px solid #ddd"
-                          borderRadius="md"
-                          boxShadow="md"
-                        >
-                          <Text fontWeight="bold">{label}</Text>
-                          <Text>Bookings: {payload[0].value}</Text>
-                          <Text>Cumulative: {cumulative}</Text>
-                        </Box>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="bookings"
-                  stroke="#0088FE"
-                  fill="#0088FE"
-                  fillOpacity={0.2}
-                  isAnimationActive
-                  animationDuration={800}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-
-            {/* Paginated Bookings Table */}
-            <Box mt={4} className="space-y-2">
-              {paginatedBookings.map((b, idx) => (
-                <Box
-                  key={idx}
-                  className="flex justify-between border-b py-1 px-2 rounded hover:bg-gray-50 transition"
-                >
-                  <Text>{b.month}</Text>
-                  <Text>{b.bookings}</Text>
-                </Box>
-              ))}
-
-              {/* Prev/Next Buttons */}
-              <Center mt={2}>
-                <HStack spacing={4}>
-                  <Button
-                    size="sm"
-                    onClick={handleBookingsPrev}
-                    isDisabled={bookingsPage === 1}
-                  >
-                    Prev
-                  </Button>
-                  <Text>
-                    {bookingsPage} / {bookingsTotalPages}
-                  </Text>
-                  <Button
-                    size="sm"
-                    onClick={handleBookingsNext}
-                    isDisabled={bookingsPage === bookingsTotalPages}
-                  >
-                    Next
-                  </Button>
-                </HStack>
-              </Center>
-            </Box>
-          </CardBody>
-        </Card>
-
-        {/* Spot Availability */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <Text>Spot Availability</Text>
-          </CardHeader>
-          <CardBody>
-            <ResponsiveContainer width="100%" height={380}>
               <PieChart>
                 <Pie
-                  data={[
-                    { name: "Available", value: availableSpots },
-                    { name: "Occupied", value: totalSpots - availableSpots },
-                  ]}
+                  data={admin.user_breakdown}
+                  dataKey="count"
+                  nameKey="role"
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                  }
+                  label
                 >
-                  {Array.from({ length: 2 }).map((_, idx) => (
-                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                  {admin.user_breakdown.map((_entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </CardBody>
         </Card>
-      </Box>
 
-      {/* Spot Evaluation Reports */}
-      <Box className="grid gap-4">
+        {/* Booking trends */}
         <Card>
           <CardHeader>
-            <Text>Spot Evaluation Reports</Text>
+            <Text fontWeight="semibold">Booking Trends</Text>
           </CardHeader>
-          <CardBody className="space-y-4">
-            {(paginatedReports ?? []).map((report, idx) => (
-              <Box key={idx} className="flex justify-between items-center">
-                <Text>{report?.spot ?? "Unknown Spot"}</Text>
-                <Text>Precision: {report?.precision?.toFixed(2) ?? 0}</Text>
-                <Text>Recall: {report?.recall?.toFixed(2) ?? 0}</Text>
-                <Text>F1: {report?.f1?.toFixed(2) ?? 0}</Text>
-              </Box>
-            ))}
-
-            {/* Prev/Next Buttons */}
-            <Center mt={4}>
-              <HStack spacing={4}>
-                <Button
-                  size="sm"
-                  onClick={handleReportsPrev}
-                  isDisabled={reportsPage === 1}
-                >
-                  Prev
-                </Button>
-                <Text>
-                  {reportsPage} / {reportsTotalPages}
-                </Text>
-                <Button
-                  size="sm"
-                  onClick={handleReportsNext}
-                  isDisabled={reportsPage === reportsTotalPages}
-                >
-                  Next
-                </Button>
-              </HStack>
-            </Center>
+          <CardBody>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={admin.booking_trends.map((b) => ({
+                  date: b.start_time__date,
+                  count: b.bookings_count ?? 0,
+                }))}
+              >
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" stroke="#4f46e5" />
+              </LineChart>
+            </ResponsiveContainer>
           </CardBody>
         </Card>
       </Box>
+
+      {/* Revenue by facility */}
+      <Card>
+        <CardHeader>
+          <Text fontWeight="semibold">Revenue by Facility</Text>
+        </CardHeader>
+        <CardBody>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={admin.revenue.by_facility.map((f) => ({
+                facility: f.parking_spot__facility__name,
+                total: f.total ?? 0,
+              }))}
+            >
+              <XAxis dataKey="facility" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="total" fill="#10b981" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardBody>
+      </Card>
+
+      {/* Timeline */}
+      <Card>
+        <CardHeader>
+          <Text fontWeight="semibold">Recent Activity Timeline</Text>
+        </CardHeader>
+        <CardBody>
+          <VStack align="stretch" spacing={4}>
+            {timeline.map((item, idx) => (
+              <Box key={idx}>
+                <HStack align="start" spacing={3}>
+                  <Avatar
+                    size="sm"
+                    name={item.type === "user" ? (item as any).email : (item as any).user}
+                    bg={item.type === "user" ? "blue.500" : "green.500"}
+                  />
+                  <Box>
+                    {item.type === "user" ? (
+                      <Text>
+                        <b>{(item as any).email}</b> signed up as{" "}
+                        <span className="capitalize">{(item as any).role}</span>
+                      </Text>
+                    ) : (
+                      <Text>
+                        <b>{(item as any).user}</b> booked a spot at{" "}
+                        <b>{(item as any).facility}</b>
+                      </Text>
+                    )}
+                    <Text fontSize="sm" color="gray.500">
+                      {dayjs(item.time).format("MMM D, YYYY HH:mm")}
+                    </Text>
+                  </Box>
+                </HStack>
+                {idx < timeline.length - 1 && <Divider my={2} />}
+              </Box>
+            ))}
+          </VStack>
+        </CardBody>
+      </Card>
+
+      {/* Facility metrics */}
+      <Card>
+        <CardHeader>
+          <Text fontWeight="semibold">Facility Metrics</Text>
+        </CardHeader>
+        <CardBody overflowX="auto">
+          <Table size="sm">
+            <Thead>
+              <Tr>
+                <Th>Facility</Th>
+                <Th>Total Spots</Th>
+                <Th>Occupied Spots</Th>
+                <Th>Occupancy Rate</Th>
+                <Th>Total Revenue</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {admin.facility_metrics.map((f, idx) => (
+                <Tr key={idx}>
+                  <Td>{f.facility_name}</Td>
+                  <Td>{f.total_spots}</Td>
+                  <Td>{f.occupied_spots}</Td>
+                  <Td>{(f.occupancy_rate * 100).toFixed(1)}%</Td>
+                  <Td>${f.total_revenue}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </CardBody>
+      </Card>
     </Box>
   );
 };
 
-export default Overview;
+export default AdminOverview;
 
-const MetricCard = ({
-  title,
-  amount,
-  progress,
-}: {
-  title: string;
-  amount: number;
-  progress: number;
-}) => (
+const MetricCard = ({ title, amount }: { title: string; amount: number }) => (
   <Card>
     <CardHeader>
       <Text className="text-sm font-medium">{title}</Text>
     </CardHeader>
     <CardBody>
       <Box className="text-2xl font-bold">{amount}</Box>
-      <Box className="mt-3 h-1 bg-gray-200 rounded">
-        <Box
-          className="h-1 bg-primary-400"
-          style={{ width: `${progress ?? 0}%` }}
-        />
-      </Box>
     </CardBody>
   </Card>
 );
