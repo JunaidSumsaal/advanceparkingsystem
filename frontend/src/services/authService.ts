@@ -45,8 +45,8 @@ export const refresh = async (refresh: string) => {
 };
 
 // Admin Users
-export const getAdminUsers = async ({ page = 1, limit = 20 }) => {
-  const res = await apiHelper.get(`${AUTH}${ADMIN}/users/`, { params: { page, limit } });
+export const getAdminUsers = async () => {
+  const res = await apiHelper.get(`${AUTH}${ADMIN}/users/`);
   return res;
 };
 
