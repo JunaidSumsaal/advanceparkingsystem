@@ -21,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ctx": "^0.3.0",
+    "dayjs": "^1.11.13",
     "flowbite-react": "^0.12.7",
     "framer-motion": "^12.23.12",
     "js-cookie": "^3.0.5",
