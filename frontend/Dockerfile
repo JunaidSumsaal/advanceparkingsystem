@@ -2,19 +2,18 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-
-RUN npm install
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
 COPY . .
 
-RUN npm run build
+RUN yarn build
 
 FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g serve
+RUN yarn global add serve
 
 COPY --from=builder /app/dist .
 
