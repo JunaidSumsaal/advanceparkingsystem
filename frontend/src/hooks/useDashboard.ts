@@ -2,6 +2,8 @@ import { useDashboardContext } from '../context/DashboardContext';
 
 export const useDashboard = () => {
   const {
+    admin,
+    fetchAdmin,
     driver,
     attendant,
     provider,
@@ -17,6 +19,8 @@ export const useDashboard = () => {
   } = useDashboardContext();
 
   return {
+    admin,
+    fetchAdmin,
     driver,
     attendant,
     provider,
