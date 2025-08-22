@@ -8,7 +8,7 @@ export const useAdminUsers = () => {
   const isAdmin = user?.role === 'admin';
   return {
     isAdmin,
-    users: isAdmin ? users : [],
+    users,
     loading,
     error,
     currentPage,
