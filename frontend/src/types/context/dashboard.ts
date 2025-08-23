@@ -134,7 +134,7 @@ export interface ProviderDashboard {
   occupied_spots: number;
   recent_activity: Array<{
     id: number;
-    user_email: string;
+    user__email: string;
     parking_spot__facility__name: string;
     facility_name: string;
     start_time: string;

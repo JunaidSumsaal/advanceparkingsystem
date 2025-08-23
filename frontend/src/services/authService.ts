@@ -2,6 +2,7 @@ import api from './api';
 import apiHelper from '../utils/apiHelper';
 import { AUTH, ADMIN, NEWSLETTER, NEWSLETTER_SUBSCRIBE } from './constants';
 import type { User, Credentials } from '../types/User';
+import Cookies from "js-cookie";
 
 // Login
 export const login = async ({ username, password }: Partial<Credentials>) => {
@@ -34,7 +35,9 @@ export const changePassword = async (oldPassword: string, newPassword: string) =
 
 // Logout
 export const logout = async () => {
-  const res = await apiHelper.post(`${AUTH}/logout/`);
+  const res = await apiHelper.post(`${AUTH}/logout/`, {
+    refresh: Cookies.get("refresh") || ""
+  });
   return res;
 };
 
