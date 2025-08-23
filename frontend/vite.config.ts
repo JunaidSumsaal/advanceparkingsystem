@@ -27,7 +27,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'https://advancepackingsystem-backend.onrender.com',
         changeOrigin: true, 
         rewrite: (path) => path.replace(/^\/api/, '/api') 
       }
