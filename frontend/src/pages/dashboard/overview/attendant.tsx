@@ -12,29 +12,53 @@ import {
 import { useDashboard } from "../../../hooks/useDashboard";
 import Dash from "../../../components/loader/dashboard";
 
-const DriverDashboard = () => {
-  const { driver, fetchDriver, loading } = useDashboard();
+const AttendantDashboard = () => {
+  const { attendant, fetchAttendant, loading } = useDashboard();
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchDriver();
-  }, [fetchDriver]);
+    fetchAttendant();
+  }, [fetchAttendant]);
 
-  if (loading || !driver) {
+  if (loading || !attendant) {
     return <Dash />;
   }
 
-  const recentBookings = driver.recent_activity;
-  const totalSpending = driver.total_spending;
+  const recentBookings = attendant.recent_bookings;
 
   return (
     <Box className="p-8 space-y-6">
       {/* Metrics */}
       <Box className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Active Bookings" amount={driver.active_bookings} />
-        <MetricCard title="Past Bookings" amount={driver.past_bookings} />
-        <MetricCard title="Total Spending" amount={`$${totalSpending}`} />
+        <MetricCard
+          title="Managed Facilities"
+          amount={attendant.managed_facilities_count}
+        />
+        <MetricCard title="Active Spots" amount={attendant.active_spots} />
+        <MetricCard title="Occupied Spots" amount={attendant.occupied_spots} />
       </Box>
+
+      {/* Facility Metrics */}
+      <Card>
+        <CardHeader>
+          <Text>Facility Metrics</Text>
+        </CardHeader>
+        <CardBody>
+          <Box className="space-y-4">
+            {attendant.facility_metrics.map((facility, idx) => (
+              <Box key={idx} className="flex justify-between items-center">
+                <Text>{facility.facility_name}</Text>
+                <Text>{`Total Spot: ${facility.total_spots}`}</Text>
+                <Text>{`Occupied Spot: ${facility.occupied_spots}`}</Text>
+                <Text>{`Occupancy Rate: ${facility.occupancy_rate.toFixed(
+                  2
+                )}%`}</Text>
+                <Text>{`Revenue: $${facility.revenue.toFixed(2)}`}</Text>
+              </Box>
+            ))}
+          </Box>
+        </CardBody>
+      </Card>
 
       {/* Recent Activity */}
       <Card>
@@ -68,7 +92,7 @@ const DriverDashboard = () => {
                 <Button
                   size="sm"
                   onClick={() => setPage(page + 1)}
-                  isDisabled={page === recentBookings.length}
+                  isDisabled={page === attendant.recent_bookings.length}
                 >
                   Next
                 </Button>
@@ -81,15 +105,9 @@ const DriverDashboard = () => {
   );
 };
 
-export default DriverDashboard;
+export default AttendantDashboard;
 
-const MetricCard = ({
-  title,
-  amount,
-}: {
-  title: string;
-  amount: number | string;
-}) => (
+const MetricCard = ({ title, amount }: { title: string; amount: number }) => (
   <Card>
     <CardHeader>
       <Text className="text-sm font-medium">{title}</Text>
