@@ -25,15 +25,8 @@ RUN adduser --disabled-password --gecos '' appuser \
 && chown -R appuser /app
 USER appuser
 
-# Migrations daone to postgress sql already
-# RUN python manage.py makemigrations &&\
-# python manage.py migrate
-
-# RUN python manage.py seed
-
 ENV DJANGO_SETTINGS_MODULE=core.settings
 
-RUN python manage.py collectstatic --no-input
 
 EXPOSE 8000
 
