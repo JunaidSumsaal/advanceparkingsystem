@@ -1,4 +1,4 @@
-export const API = import.meta.env.VITE_API_URL || 'https://advancepackingsystem-backend.onrender.com/api';
+export const API = import.meta.env.VITE_API_URL || '/api';
 export const SECURE = import.meta.env.VITE_API_SECURE || false;
 
 // Core API prefixes
