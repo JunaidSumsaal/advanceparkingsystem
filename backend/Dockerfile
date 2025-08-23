@@ -20,6 +20,9 @@ RUN pip install --upgrade pip \
 
 COPY . /app/
 
+# This is the new line you should add
+RUN python manage.py collectstatic --no-input
+
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser /app
 USER appuser
