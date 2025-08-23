@@ -127,7 +127,7 @@ const ProviderDashboard = () => {
                   key={activity.id}
                   className="flex justify-between items-center"
                 >
-                  <Text>{activity.user_email}</Text>
+                  <Text>{activity.user__email}</Text>
                   <Text>{activity.parking_spot__facility__name}</Text>
                   <Text>{new Date(activity.start_time).toLocaleString()}</Text>
                 </Box>
