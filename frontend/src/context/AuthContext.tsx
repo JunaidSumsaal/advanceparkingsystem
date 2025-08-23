@@ -88,6 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   /** Refresh token */
   const refreshAccessToken = useCallback(async () => {
+    if (!Cookies.get("refresh")) {
+      return;
+    }
     try {
       const data = await refresh(Cookies.get("refresh") || "");
       const { access, refresh: newRefresh } = data;
@@ -147,21 +150,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   /** Update user profile */
-const profilesUpdate = useCallback(async (updateData: Partial<User>) => {
-  try {
-    await updateProfile(updateData);
-    // Merge updates into local user state
-    setUser((prev) => prev ? { ...prev, ...updateData } : prev);
-    setError(null);
-  } catch (err) {
-    console.error("Error updating profile", err);
-    setError("Failed to update profile");
-    throw err;
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
+  const profilesUpdate = useCallback(async (updateData: Partial<User>) => {
+    try {
+      await updateProfile(updateData);
+      // Merge updates into local user state
+      setUser((prev) => (prev ? { ...prev, ...updateData } : prev));
+      setError(null);
+    } catch (err) {
+      console.error("Error updating profile", err);
+      setError("Failed to update profile");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   /** On mount */
   useEffect(() => {
