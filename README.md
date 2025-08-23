@@ -50,6 +50,87 @@ This system is designed to streamline parking operations, enhance user experienc
 * User activity tracking (logins, bookings).
 * Spot usage analytics (occupancy rates, peak times).
 
+## Seeded Credentials for the Project
+
+Below are the **default credentials** for the **Admin**, **Provider**, **Attendant**, and **Driver** users seeded into the system.
+You can use these to log in and test the application.
+
+**Note**: The Following seeds are used for sumulations to test and predict nearby routes for **drivers(customers)**.
+
+### 1. **Admin Credentials**
+
+#### Show Admin Credentials
+
+* **Username**: `admin1`
+* **Email**: `admin1@example.com`
+* **Password**: `password123`
+
+
+### 2. **Provider Credentials**
+
+#### Show Provider Credentials
+
+* **Username**: `provider1`
+* **Email**: `provider1@example.com`
+* **Password**: `password123`
+
+> **Note**: You can create multiple **Providers** (e.g., `provider2`, `provider3`, etc. up-to 10), with unique credentials generated for each one.
+
+
+### 3. **Attendant Credentials**
+
+#### Show Attendant Credentials
+
+* **Username**: `attendant1`
+* **Email**: `attendant1@example.com`
+* **Password**: `password123`
+
+> **Note**: Multiple **Attendants** are available, such as `attendant2`, `attendant3`, etc., for testing up-to 40.
+
+
+### 4. **Driver Credentials**
+
+#### Show Driver Credentials
+
+* **Username**: `driver1`
+* **Email**: `driver1@example.com`
+* **Password**: `password123`
+
+> **Note**: Multiple **Drivers** are available (e.g., `driver2`, `driver3`, etc. up-to 500).
+
+
+### Example Usage in the Application
+
+1. **Login as Admin:**
+
+   * **Username**: `admin`
+   * **Password**: `admin123`
+
+2. **Login as Provider:**
+
+   * **Username**: `provider1`
+   * **Password**: `password123`
+
+3. **Login as Attendant:**
+
+   * **Username**: `attendant1`
+   * **Password**: `password123`
+
+4. **Login as Driver:**
+
+   * **Username**: `driver1`
+   * **Password**: `password123`
+
+### Additional Information
+
+* **Admin Role**: Full control over the application.
+* **Provider Role**: Manage parking facilities, spot availability, and revenue.
+* **Attendant Role**: Oversee daily operations of parking facilities.
+* **Driver Role**: Users who book parking spots at different facilities.
+
+> **Note**: All users are seeded with the password `password123`. You may change the passwords via the admin panel after logging in.
+
+
 ## Project Structure
 
 ```bash
@@ -138,10 +219,11 @@ Frontend runs on **[http://localhost:5173/](http://localhost:5173/)**
 
 ### 1. Configure API base URL
 
-Create **`frontend/src/api/axios.js`**
+Create **`frontend/src/services/api.ts`**
 
 ```javascript
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const api = axios.create({
   baseURL: "http://127.0.0.1:8000/api/",
@@ -151,7 +233,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access");
+  const token = Cookies.get("access");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -163,61 +245,79 @@ export default api;
 
 ### 2. Example Auth API
 
-**`frontend/src/api/auth.js`**
+**`frontend/src/api/services/authServices.ts`**
 
 ```javascript
-import api from "./axios";
+import api from "./api.ts";
 import Cookies from "js-cookie";
 
-export const login = async (username, password) => {
-  const response = await api.post("token/", { username, password });
+import api from "./api";
+import Cookies from "js-cookie";
+
+// Login user and store tokens in cookies
+export const login = async (username: string, password: string) => {
+  const response = await api.post("api/accounts/login/", { username, password });
+
   if (response.data.access) {
-    Cookies.set("access", response.data.access);
-    Cookies.set("refresh", response.data.refresh);
+    Cookies.set("access", response.data.access, { secure: true, sameSite: "Strict" });
+    Cookies.set("refresh", response.data.refresh, { secure: true, sameSite: "Strict" });
   }
+
   return response.data;
 };
 
+// Logout user and clear cookies
 export const logout = () => {
-  Cookies.removeItem("access");
-  Cookies.removeItem("refresh");
+  await api.post("api/accounts/logout/", { refresh: Cookies.get('refresh') })
+  Cookies.remove("access");
+  Cookies.remove("refresh");
 };
+
 ```
 
 ### 3. Fetch Example (Nearby Spots)
 
 ```javascript
-import api from "./axios";
+import api from "./api";
 
-export const getNearbySpots = async (lat, lng, radius = 2) => {
-  const res = await api.get("parking/nearby/", {
+// Fetch nearby parking spots based on user's location
+export const getNearbySpots = async (lat: number, lng: number, radius = 2) => {
+  const res = await api.get("api/parking/nearby/", {
     params: { lat, lng, radius },
   });
   return res.data;
 };
+
 ```
-
-
 
 ### 4. Usage in a React Component
 
 ```jsx
 import React, { useEffect, useState } from "react";
-import { getNearbySpots } from "../api/parking";
+import { getNearbySpots } from "../api/services/parkingServices";
+
+interface Spot {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
 
 export default function NearbySpots() {
-  const [spots, setSpots] = useState([]);
+  const [spots, setSpots] = useState<Spot[]>([]);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
-      getNearbySpots(pos.coords.latitude, pos.coords.longitude).then(setSpots);
+      getNearbySpots(pos.coords.latitude, pos.coords.longitude)
+        .then((data) => setSpots(data))
+        .catch((err) => console.error("Failed to fetch spots:", err));
     });
   }, []);
 
   return (
     <div>
-      <h2 className="text-xl font-bold">Nearby Spots</h2>
-      <ul>
+      <h2 className="text-xl font-bold mb-4">Nearby Spots</h2>
+      <ul className="space-y-2">
         {spots.map((s) => (
           <li key={s.id}>
             {s.name} — {s.latitude}, {s.longitude}
@@ -228,6 +328,7 @@ export default function NearbySpots() {
   );
 }
 ```
+
 
 ## Environment Configuration
 
@@ -260,6 +361,7 @@ EMAIL_USE_TLS=True
 EMAIL_HOST_USER=youremail@gmail.com
 EMAIL_HOST_PASSWORD=your-email-password
 
+
 # Push Notifications (WebPush VAPID keys)
 VAPID_PUBLIC_KEY=your-public-key
 VAPID_PRIVATE_KEY=your-private-key
@@ -282,15 +384,12 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = ["*"]
 
+
 DATABASES = {
-    "default": {
-        "ENGINE": env("DB_ENGINE", default="django.db.backends.sqlite3"),
-        "NAME": env("DB_NAME", default=os.path.join(BASE_DIR, "db.sqlite3")),
-        "USER": env("DB_USER", default=""),
-        "PASSWORD": env("DB_PASSWORD", default=""),
-        "HOST": env("DB_HOST", default=""),
-        "PORT": env("DB_PORT", default=""),
-    }
+    "default": env.db(
+        "DATABASE_URL", 
+        default="postgres://username:password@localhost:5432/advanceparkingsystem"
+    )
 }
 ```
 
