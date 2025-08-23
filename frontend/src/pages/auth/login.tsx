@@ -159,14 +159,6 @@ export default function Login() {
                   >
                     Remember me
                   </Checkbox>
-                  <ChakraLink
-                    as={Link}
-                    to="/reset-email"
-                    _hover={{ color: "primary.500" }}
-                    color="primary.400"
-                  >
-                    Forgot password?
-                  </ChakraLink>
                 </Stack>
                 <Button
                   type="submit"
