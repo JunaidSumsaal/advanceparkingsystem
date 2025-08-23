@@ -68,7 +68,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "bookings",
+        path: "booking",
         element: (
           <Suspense fallback={<Dash />}>
             <Booking />
