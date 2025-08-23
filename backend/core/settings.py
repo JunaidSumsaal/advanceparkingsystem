@@ -1,3 +1,4 @@
+import json
 import os
 import environ
 from pathlib import Path
@@ -18,17 +19,18 @@ DEBUG = env.bool('DEBUG', default=True)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost'])
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_TIME_LIMIT = 30
 CELERY_TASK_SOFT_TIME_LIMIT = 20
-CELERY_ACCEPT_CONTENT=env("CELERY_ACCEPT_CONTENT", default=["json"]),
-CELERY_RESULT_SERIALIZER=env("CELERY_RESULT_SERIALIZER", default="json"),
-CELERY_TASK_SERIALIZER=env("CELERY_TASK_SERIALIZER", default="json"),
+CELERY_ACCEPT_CONTENT = json.loads(env("CELERY_ACCEPT_CONTENT", default='["json"]'))
+CELERY_RESULT_SERIALIZER = env("CELERY_RESULT_SERIALIZER", default="json")
+CELERY_TASK_SERIALIZER = env("CELERY_TASK_SERIALIZER", default="json")
+
 APPEND_SLASH = False
 VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='95d05a8c43ad9b3d9f079995211fac2f188bfa7b')
 VAPID_CLAIM_SUB = env('VAPID_CLAIM_SUB', default='mailto:advanceparkingsystem@gmail.com')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+
 
 INSTALLED_APPS = [
     'django_prometheus',
@@ -92,10 +94,10 @@ DATABASES = {
 }
 
 
-if DEBUG:
-    DATABASES = {
-        "default": env.db("SQLITE_URL", default="sqlite:///db.sqlite3")
-    }
+# if DEBUG:
+#     DATABASES = {
+#         "default": env.db("SQLITE_URL", default="sqlite:///db.sqlite3")
+#     }
 
 
 
@@ -186,3 +188,12 @@ LOGGING = {
         "level": LOG_LEVEL,
     },
 }
+
+# Email Configuration for Gmail
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
