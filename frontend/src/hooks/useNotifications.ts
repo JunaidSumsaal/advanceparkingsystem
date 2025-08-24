@@ -1,7 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Cookies from "js-cookie";
-import { unreadCount as fetchUnreadCount, getNotifications, markAllNotificationsRead, markAsRead, markAsUnRead } from "../services/notificationServices";
-import type { NotificationResponse, Notifications, } from "../types/context/notification";
+import {
+  unreadCount as fetchUnreadCount,
+  getNotifications,
+  markAllNotificationsRead,
+  markAsRead,
+  markAsUnRead,
+} from "../services/notificationServices";
+import type { NotificationResponse, Notifications } from "../types/context/notification";
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notifications[]>([]);
@@ -61,7 +67,16 @@ export const useNotifications = () => {
     } catch (e) {
       console.error("Failed to mark as unread:", e);
     }
-};
+  };
+
+  // handle toggle between read/unread
+  const handleToggleReadStatus = (id: number, isRead: boolean) => {
+    if (isRead) {
+      handleMarkUnRead(id);  // If read, mark as unread
+    } else {
+      handleMarkRead(id);  // If unread, mark as read
+    }
+  };
 
   // mark all read
   const handleMarkAllRead = async () => {
@@ -115,6 +130,7 @@ export const useNotifications = () => {
     page,
     setPage,
     loadPage,
+    handleToggleReadStatus,
     handleMarkRead,
     handleMarkUnRead,
     handleMarkAllRead,

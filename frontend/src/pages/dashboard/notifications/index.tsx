@@ -29,7 +29,7 @@ export default function NotificationsPage() {
   const [noNotifications, setNoNotifications] = useState<boolean>(false);  // New state
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const toast = useToast();
-  const { handleMarkRead, handleMarkUnRead} = useNotifications();
+  const { handleToggleReadStatus} = useNotifications();
 
   const loadPage = useCallback(
     async (pageToLoad: number, filterType?: string, replace = false) => {
@@ -43,7 +43,7 @@ export default function NotificationsPage() {
         setHasMore(Boolean(data.next));
 
         if (data.count === 0) {
-          setNoNotifications(true);  // Set noNotifications to true if no data
+          setNoNotifications(true);
         } else {
           setNoNotifications(false);
         }
@@ -77,7 +77,7 @@ export default function NotificationsPage() {
     setPage(1);
     setItems([]);
     setHasMore(true);
-    setNoNotifications(false);  // Reset noNotifications when filter changes
+    setNoNotifications(false);
     loadPage(1, filter || undefined, true);
   }, [filter, loadPage]);
 
@@ -149,7 +149,7 @@ export default function NotificationsPage() {
       </Text>
 
       {noNotifications && filter && (
-        <Text color="red.500">No notifications available for this filter.</Text>  // Display message if no notifications match the filter
+        <Text color="red.500">No notifications available for this filter.</Text>
       )}
 
       <VStack align="stretch" spacing={3}>
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
             borderWidth="1px"
             borderRadius="lg"
             bg={n.is_read ? "gray.50" : "blue.50"}
-            onClick={() => n.is_read ? handleMarkUnRead(n.id) : handleMarkRead(n.id)}
+            onClick={() => handleToggleReadStatus(n.id, n.is_read)}
             _hover={{bg: 'secondary.50'}}
           >
             <HStack justify="space-between">
