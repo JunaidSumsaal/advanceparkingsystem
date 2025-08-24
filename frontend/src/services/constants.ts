@@ -38,7 +38,6 @@ export const PARK_REVIEW = `/review`;
 export const NOTIF_LIST = `/notifications`;
 export const NOTIF_HISTORY = `/history`;
 export const NOTIF_EMAIL_PREF = `/email-preference`;
-export const NOTIF_SUBSCRIBE = `/subscribe`;
 export const NOTIF_UNSUBSCRIBE = `/unsubscribe`;
 export const NOTIF_PUSH = `/push-subscriptions`;
 

@@ -6,7 +6,6 @@ import {
   NOTIF_LIST,
   NOTIF_HISTORY,
   NOTIF_EMAIL_PREF,
-  NOTIF_SUBSCRIBE,
   NOTIF_UNSUBSCRIBE,
   NOTIF_PUSH,
 } from "./constants";
@@ -66,7 +65,7 @@ export const getPushSubscriptions = async (params?: any) => {
 };
 
 export const createPushSubscription = async (data: any) => {
-  const res = await apiHelper.post(`${NOTIFICATIONS}${NOTIF_SUBSCRIBE}/`, data);
+  const res = await apiHelper.post(`${NOTIFICATIONS}/subscribe`, data);
   return res;
 };
 
