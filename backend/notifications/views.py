@@ -49,7 +49,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         log_action(self.request.user, "view_notifications", "User viewed notifications", self.request)
-        filter_type = self.request.query_params.get('filterType', None)
+        filter_type = self.request.query_params.get('type', None)
         queryset = Notification.objects.filter(user=self.request.user).order_by("-sent_at")
         if filter_type:
             queryset = queryset.filter(type=filter_type)
