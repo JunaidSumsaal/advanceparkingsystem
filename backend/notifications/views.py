@@ -66,6 +66,17 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
             notif.read_at = timezone.now()
             notif.save(update_fields=["is_read","read_at"])
         return Response(NotificationSerializer(notif).data)
+    
+    @action(detail=True, methods=["patch"])
+    def unread(self, request, pk=None):
+        notif = self.get_queryset().filter(pk=pk).first()
+        if not notif:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if not notif.is_read:
+            notif.is_read = False
+            notif.read_at = timezone.now()
+            notif.save(update_fields=["is_read","read_at"])
+        return Response(NotificationSerializer(notif).data)
 
     @action(detail=False, methods=["post"])
     def mark_all_read(self, request):

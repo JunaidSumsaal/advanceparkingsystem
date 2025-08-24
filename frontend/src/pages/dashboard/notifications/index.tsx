@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Box,
@@ -11,8 +12,12 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { getNotifications, markAllNotificationsRead } from "../../../services/notificationServices";
+import {
+  getNotifications,
+  markAllNotificationsRead,
+} from "../../../services/notificationServices";
 import Dash from "../../../components/loader/dashboard";
+import { useNotifications } from "../../../hooks/useNotifications";
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -21,16 +26,27 @@ export default function NotificationsPage() {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [filter, setFilter] = useState<string>("");
   const [total, setTotal] = useState<number>(0);
+  const [noNotifications, setNoNotifications] = useState<boolean>(false);  // New state
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const toast = useToast();
+  const { handleMarkRead, handleMarkUnRead} = useNotifications();
 
   const loadPage = useCallback(
     async (pageToLoad: number, filterType?: string, replace = false) => {
       setLoading(true);
       try {
-        const data = await getNotifications(pageToLoad, filterType || undefined);
+        const data = await getNotifications(
+          pageToLoad,
+          filterType || undefined
+        );
         setTotal(data.count);
         setHasMore(Boolean(data.next));
+
+        if (data.count === 0) {
+          setNoNotifications(true);  // Set noNotifications to true if no data
+        } else {
+          setNoNotifications(false);
+        }
 
         setItems((prev) => {
           if (replace) return data.results;
@@ -57,15 +73,14 @@ export default function NotificationsPage() {
     [toast]
   );
 
-  // initial load & filter change
   useEffect(() => {
     setPage(1);
     setItems([]);
     setHasMore(true);
+    setNoNotifications(false);  // Reset noNotifications when filter changes
     loadPage(1, filter || undefined, true);
   }, [filter, loadPage]);
 
-  // infinite scroll observer
   useEffect(() => {
     if (!sentinelRef.current) return;
     const el = sentinelRef.current;
@@ -123,7 +138,7 @@ export default function NotificationsPage() {
             <option value="booking_reminder">Booking Reminder</option>
             <option value="general">General</option>
           </Select>
-          <Button size="sm" colorScheme="blue" onClick={markAllRead}>
+          <Button size="sm" bg="primary.400" color={'white'} onClick={markAllRead}>
             Mark all as read
           </Button>
         </HStack>
@@ -133,14 +148,21 @@ export default function NotificationsPage() {
         Showing {items.length} of {total}
       </Text>
 
+      {noNotifications && filter && (
+        <Text color="red.500">No notifications available for this filter.</Text>  // Display message if no notifications match the filter
+      )}
+
       <VStack align="stretch" spacing={3}>
         {items.map((n) => (
           <Box
+            as="button"
             key={n.id}
             p={4}
             borderWidth="1px"
             borderRadius="lg"
             bg={n.is_read ? "gray.50" : "blue.50"}
+            onClick={() => n.is_read ? handleMarkUnRead(n.id) : handleMarkRead(n.id)}
+            _hover={{bg: 'secondary.50'}}
           >
             <HStack justify="space-between">
               <Heading size="sm">{n.title}</Heading>

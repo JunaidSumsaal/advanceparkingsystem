@@ -14,7 +14,7 @@ import { useNotifications } from "../../hooks/useNotifications";
 import { useEffect } from "react";
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, handleMarkRead, loadPage, handleMarkAllRead } = useNotifications();
+  const { notifications, unreadCount, handleMarkRead, handleMarkUnRead, loadPage, handleMarkAllRead } = useNotifications();
 
   const handleMarkAllReadClick = () => {
         handleMarkAllRead();
@@ -53,7 +53,7 @@ export default function NotificationBell() {
         {notifications.map((n) => (
           <MenuItem
             key={n.id}
-            onClick={() => handleMarkRead(n.id)}
+            onClick={() => n.is_read ? handleMarkUnRead(n.id) : handleMarkRead(n.id)}
             style={{ opacity: n.is_read ? 0.5 : 1 }}
           >
             <Box>

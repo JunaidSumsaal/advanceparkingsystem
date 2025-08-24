@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Cookies from "js-cookie";
-import { unreadCount as fetchUnreadCount, getNotifications, markAllNotificationsRead, markAsRead } from "../services/notificationServices";
+import { unreadCount as fetchUnreadCount, getNotifications, markAllNotificationsRead, markAsRead, markAsUnRead } from "../services/notificationServices";
 import type { NotificationResponse, Notifications, } from "../types/context/notification";
 
 export const useNotifications = () => {
@@ -50,6 +50,18 @@ export const useNotifications = () => {
     );
     setUnreadCount((prev) => Math.max(prev - 1, 0));
   };
+
+  const handleMarkUnRead = async (id: number) => {
+    try {
+      await markAsUnRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: false } : n))
+      );
+      setUnreadCount((prev) => Math.max(prev + 1, 0));
+    } catch (e) {
+      console.error("Failed to mark as unread:", e);
+    }
+};
 
   // mark all read
   const handleMarkAllRead = async () => {
@@ -104,6 +116,7 @@ export const useNotifications = () => {
     setPage,
     loadPage,
     handleMarkRead,
+    handleMarkUnRead,
     handleMarkAllRead,
   };
 };

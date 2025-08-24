@@ -23,6 +23,11 @@ export const markAsRead = async (id: number) => {
   return res.data;
 };
 
+export const markAsUnRead = async (id: number) => {
+  const res = await apiHelper.patch(`${NOTIFICATIONS}${NOTIF_LIST}/${id}/read/`, {});
+  return res.data;
+};
+
 
 export const getNotification = async (id: number): Promise<Notifications>  => {
   const res = await apiHelper.get(`${NOTIFICATIONS}${NOTIF_LIST}/${id}/`);
