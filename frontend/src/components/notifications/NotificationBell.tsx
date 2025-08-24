@@ -14,7 +14,7 @@ import { useNotifications } from "../../hooks/useNotifications";
 import { useEffect } from "react";
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, loadPage, handleToggleReadStatus } = useNotifications();
+  const { notifications, unreadCount, loadPage, handleToggleReadStatus, handleMarkAllRead } = useNotifications();
 
   useEffect(() => {
     loadPage()
@@ -44,7 +44,7 @@ export default function NotificationBell() {
         variant="ghost"
       />
       <MenuList maxH="300px" overflowY="auto">
-        <MenuItem w={'full'} display={'flex'} justifyContent={'flex-end'}fontSize="xs" color="gray.500" textAlign={'center'} onClick={handleMarkAllReadClick}>Mark all as read</MenuItem>
+        <MenuItem w={'full'} display={'flex'} justifyContent={'flex-end'}fontSize="xs" color="gray.500" textAlign={'center'} onClick={handleMarkAllRead}>Mark all as read</MenuItem>
         <MenuDivider />
         {notifications.length === 0 && <Text p={3}>No notifications</Text>}
         {notifications.map((n) => (
