@@ -20,12 +20,12 @@ export const getNotifications = async (page = 1, type?: string): Promise<Notific
 
 export const markAsRead = async (id: number) => {
   const res = await apiHelper.patch(`${NOTIFICATIONS}${NOTIF_LIST}/${id}/read/`, {});
-  return res.data;
+  return res;
 };
 
 export const markAsUnRead = async (id: number) => {
-  const res = await apiHelper.patch(`${NOTIFICATIONS}${NOTIF_LIST}/${id}/read/`, {});
-  return res.data;
+  const res = await apiHelper.patch(`${NOTIFICATIONS}${NOTIF_LIST}/${id}/unread/`, {});
+  return res;
 };
 
 
@@ -42,7 +42,7 @@ export const markAllNotificationsRead = async () => {
 
 export const unreadCount = async () => {
   const res = await apiHelper.get(`${NOTIFICATIONS}${NOTIF_LIST}/unread_count/`);
-  return res.unread;
+  return res;
 };
 
 export const getNotificationHistory = async (params?: any) => {

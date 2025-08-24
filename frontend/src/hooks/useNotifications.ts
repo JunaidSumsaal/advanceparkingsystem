@@ -64,6 +64,7 @@ export const useNotifications = () => {
         prev.map((n) => (n.id === id ? { ...n, is_read: false } : n))
       );
       setUnreadCount((prev) => Math.max(prev + 1, 0));
+      console.log('unread');
     } catch (e) {
       console.error("Failed to mark as unread:", e);
     }
@@ -72,9 +73,9 @@ export const useNotifications = () => {
   // handle toggle between read/unread
   const handleToggleReadStatus = (id: number, isRead: boolean) => {
     if (isRead) {
-      handleMarkUnRead(id);  // If read, mark as unread
+      handleMarkUnRead(id);
     } else {
-      handleMarkRead(id);  // If unread, mark as read
+      handleMarkRead(id);
     }
   };
 

@@ -12,7 +12,6 @@ import {
   Image,
 } from "@chakra-ui/react";
 import {
-  BarChart3,
   LayoutDashboard,
   User,
   Settings,
@@ -41,12 +40,12 @@ const LinkItems: Array<{
     icon: LayoutDashboard,
     path: "/dashboard"
   },
-  {
-    name: "Metrics",
-    icon: BarChart3,
-    path: "/dashboard/metrics",
-    roles: ["admin", "provider"],
-  },
+  // {
+  //   name: "Metrics",
+  //   icon: BarChart3,
+  //   path: "/dashboard/metrics",
+  //   roles: ["admin", "provider"],
+  // },
   {
     name: "Bookings",
     icon: BookCheckIcon,

@@ -18,6 +18,7 @@ import {
 } from "../../../services/notificationServices";
 import Dash from "../../../components/loader/dashboard";
 import { useNotifications } from "../../../hooks/useNotifications";
+import { formatSnakeCaseToTitleCase } from "../../../utils/capitilizer";
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -35,10 +36,7 @@ export default function NotificationsPage() {
     async (pageToLoad: number, filterType?: string, replace = false) => {
       setLoading(true);
       try {
-        const data = await getNotifications(
-          pageToLoad,
-          filterType
-        );
+        const data = await getNotifications(pageToLoad, filterType);
         setTotal(data.count);
         setHasMore(Boolean(data.next));
 
@@ -155,7 +153,9 @@ export default function NotificationsPage() {
       </Text>
 
       {noNotifications && filter && (
-        <Text color="red.500">No notifications available for this filter.</Text>
+        <Box p={6} textAlign="center" color="gray.500">
+          No notifications available for {formatSnakeCaseToTitleCase(filter)}.
+        </Box>
       )}
 
       <VStack align="stretch" spacing={3}>
@@ -178,16 +178,19 @@ export default function NotificationsPage() {
                     ? "green"
                     : n.type === "booking_reminder"
                     ? "purple"
-                    : "blue"
+                    : n.type === "spot_available"
+                    ? "orange"
+                    : "white"
                 }
+                p={2}
               >
                 {n.type}
               </Badge>
             </HStack>
+            <Text mt={2}>{n.body}</Text>
             <Text fontSize="sm" color="gray.600">
               {new Date(n.sent_at).toLocaleString()}
             </Text>
-            <Text mt={2}>{n.body}</Text>
           </Box>
         ))}
 
@@ -196,11 +199,15 @@ export default function NotificationsPage() {
 
         {loading && <Dash />}
 
-        {!loading && !hasMore && items.length === 0 && (
-          <Box p={6} textAlign="center" color="gray.500">
-            No notifications found.
-          </Box>
-        )}
+        {!loading &&
+          !hasMore &&
+          items.length === 0 &&
+          !noNotifications &&
+          !filter && (
+            <Box p={6} textAlign="center" color="gray.500">
+              No notifications found.
+            </Box>
+          )}
       </VStack>
     </Box>
   );
