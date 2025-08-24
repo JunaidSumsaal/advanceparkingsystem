@@ -26,10 +26,10 @@ export default function NotificationsPage() {
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [filter, setFilter] = useState<string>("");
   const [total, setTotal] = useState<number>(0);
-  const [noNotifications, setNoNotifications] = useState<boolean>(false);  // New state
+  const [noNotifications, setNoNotifications] = useState<boolean>(false); // New state
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const toast = useToast();
-  const { handleToggleReadStatus} = useNotifications();
+  const { handleToggleReadStatus } = useNotifications();
 
   const loadPage = useCallback(
     async (pageToLoad: number, filterType?: string, replace = false) => {
@@ -37,7 +37,7 @@ export default function NotificationsPage() {
       try {
         const data = await getNotifications(
           pageToLoad,
-          filterType || undefined
+          filterType
         );
         setTotal(data.count);
         setHasMore(Boolean(data.next));
@@ -78,7 +78,7 @@ export default function NotificationsPage() {
     setItems([]);
     setHasMore(true);
     setNoNotifications(false);
-    loadPage(1, filter || undefined, true);
+    loadPage(1, filter, true);
   }, [filter, loadPage]);
 
   useEffect(() => {
@@ -136,9 +136,15 @@ export default function NotificationsPage() {
           >
             <option value="spot_available">Spot Available</option>
             <option value="booking_reminder">Booking Reminder</option>
+            <option value="booking_created">Booking Created</option>
             <option value="general">General</option>
           </Select>
-          <Button size="sm" bg="primary.400" color={'white'} onClick={markAllRead}>
+          <Button
+            size="sm"
+            bg="primary.400"
+            color={"white"}
+            onClick={markAllRead}
+          >
             Mark all as read
           </Button>
         </HStack>
@@ -162,7 +168,7 @@ export default function NotificationsPage() {
             borderRadius="lg"
             bg={n.is_read ? "gray.50" : "blue.50"}
             onClick={() => handleToggleReadStatus(n.id, n.is_read)}
-            _hover={{bg: 'secondary.50'}}
+            _hover={{ bg: "secondary.50" }}
           >
             <HStack justify="space-between">
               <Heading size="sm">{n.title}</Heading>

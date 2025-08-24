@@ -2,6 +2,7 @@
 export type NotificationType =
   | "spot_available"
   | "booking_reminder"
+  | "booking_created"
   | "general";
 export interface Paginated<T> {
   results: T[];
