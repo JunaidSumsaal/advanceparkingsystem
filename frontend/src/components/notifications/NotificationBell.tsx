@@ -14,7 +14,7 @@ import { useNotifications } from "../../hooks/useNotifications";
 import { useEffect } from "react";
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, handleMarkRead, loadPage, handleToggleReadStatus } = useNotifications();
+  const { notifications, unreadCount, loadPage, handleToggleReadStatus } = useNotifications();
 
   useEffect(() => {
     loadPage()
