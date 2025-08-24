@@ -1,14 +1,19 @@
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
 from accounts.utils import log_action
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action
 from .models import PushSubscription, Notification, EmailPreference
 from .serializers import PushSubscriptionSerializer, NotificationSerializer, EmailPreferenceSerializer
 from django.utils import timezone
-
+from rest_framework.pagination import PageNumberPagination
+class NotificationPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 class PushSubscriptionCreateView(generics.CreateAPIView):
     serializer_class = PushSubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotificationPagination
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -18,6 +23,11 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
     queryset = PushSubscription.objects.all()
     serializer_class = PushSubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotificationPagination
+    
+    def get_queryset(self):
+        log_action(self.request.user, "list_push_subscriptions", "User listed push subscriptions", self.request)
+        return PushSubscription.objects.filter(user=self.request.user).order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         sub, created = PushSubscription.objects.get_or_create(
@@ -31,19 +41,14 @@ class PushSubscriptionViewSet(viewsets.ModelViewSet):
         log_action(request.user, "push_subscription_created", f"Push subscription created: {sub.endpoint}", request.user.ip_address)
         return Response({"message": "Subscription saved"})
 
-class NotificationListView(generics.ListAPIView):
-    serializer_class = NotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        log_action(self.request.user, "view_notifications", "User viewed notifications", self.request)
-        return Notification.objects.filter(user=self.request.user).order_by('-sent_at')
-    
+ 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotificationPagination
 
     def get_queryset(self):
+        log_action(self.request.user, "view_notifications", "User viewed notifications", self.request)
         return Notification.objects.filter(user=self.request.user).order_by("-sent_at")
 
     @action(detail=False, methods=["get"])
@@ -72,23 +77,17 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 class EmailPreferenceUpdateView(generics.UpdateAPIView):
     serializer_class = EmailPreferenceSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotificationPagination
 
     def get_object(self):
         log_action(self.request.user, "update_email_preferences", "User updated email preferences", self.request)
         return EmailPreference.objects.get_or_create(user=self.request.user)[0]
 
-class PushSubscriptionListView(generics.ListAPIView):
-    serializer_class = PushSubscriptionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        log_action(self.request.user, "list_push_subscriptions", "User listed push subscriptions", self.request)
-        return PushSubscription.objects.filter(user=self.request.user).order_by('-created_at')
-
 class UnsubscribeNotificationView(generics.DestroyAPIView):
     queryset = PushSubscription.objects.all()
     serializer_class = PushSubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotificationPagination
 
     def get_object(self):
         log_action(self.request.user, "unsubscribe_push", "User unsubscribed from push notifications", self.request)
@@ -97,6 +96,7 @@ class UnsubscribeNotificationView(generics.DestroyAPIView):
 class NotificationHistoryView(generics.ListAPIView):
     serializer_class = PushSubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = NotificationPagination
 
     def get_queryset(self):
         log_action(self.request.user, "view_push_history", "User viewed push notification history", self.request)
