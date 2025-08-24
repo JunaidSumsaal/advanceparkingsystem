@@ -1,6 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 import { API, SECURE } from "./constants";
+import { logout } from "./authService";
 
 const api = axios.create({
   baseURL: API,
@@ -59,6 +60,7 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access}`;
         return api(originalRequest);
       } catch (err) {
+        logout();
         return Promise.reject(err);
       }
     }
