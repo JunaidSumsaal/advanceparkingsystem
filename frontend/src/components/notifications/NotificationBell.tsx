@@ -7,13 +7,18 @@ import {
   MenuItem,
   MenuList,
   Text,
+  MenuDivider,
 } from "@chakra-ui/react";
 import { BellIcon } from "@chakra-ui/icons";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useEffect } from "react";
 
 export default function NotificationBell() {
-  const { notifications, unreadCount, handleMarkRead, loadPage } = useNotifications();
+  const { notifications, unreadCount, handleMarkRead, loadPage, handleMarkAllRead } = useNotifications();
+
+  const handleMarkAllReadClick = () => {
+        handleMarkAllRead();
+  };
   useEffect(() => {
     loadPage()
   }, [loadPage])
@@ -42,6 +47,8 @@ export default function NotificationBell() {
         variant="ghost"
       />
       <MenuList maxH="300px" overflowY="auto">
+        <MenuItem w={'full'} display={'flex'} justifyContent={'flex-end'}fontSize="xs" color="gray.500" textAlign={'center'} onClick={handleMarkAllReadClick}>Mark all as read</MenuItem>
+        <MenuDivider />
         {notifications.length === 0 && <Text p={3}>No notifications</Text>}
         {notifications.map((n) => (
           <MenuItem

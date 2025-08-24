@@ -31,7 +31,7 @@ export const getNotification = async (id: number): Promise<Notifications>  => {
 
 
 export const markAllNotificationsRead = async () => {
-  const res = await apiHelper.post(`${NOTIFICATIONS}/mark_all_read/`);
+  const res = await apiHelper.post(`${NOTIFICATIONS}${NOTIF_LIST}/mark_all_read/`);
   return res;
 };
 
