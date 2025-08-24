@@ -49,7 +49,7 @@ const ProviderDashboard = () => {
         />
         <MetricCard title="Total Spots" amount={provider.spots_count} />
         <MetricCard title="Total Bookings" amount={provider.total_bookings} />
-        <MetricCard title="Avg. Price" amount={`$${provider.avg_price}`} />
+        <MetricCard title="Avg. Price" amount={`$${provider.avg_price.toFixed(2)}`} />
       </Box>
 
       {/* Booking Trends */}

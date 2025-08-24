@@ -6,15 +6,12 @@ import { AuthProvider } from "./context/AuthContext";
 import { UserProvider } from "./context/UsersContext";
 import { DashboardProvider } from "./context/DashboardContext";
 import { ParkingProvider } from "./context/ParkingContext";
-import { NotificationsProvider } from "./context/NotificationsContext";
 
 const Providers = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>
     <UserProvider>
       <DashboardProvider>
-        <NotificationsProvider>
-          <ParkingProvider>{children}</ParkingProvider>
-        </NotificationsProvider>
+        <ParkingProvider>{children}</ParkingProvider>
       </DashboardProvider>
     </UserProvider>
   </AuthProvider>

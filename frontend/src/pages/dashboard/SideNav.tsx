@@ -16,6 +16,7 @@ import {
   LayoutDashboard,
   User,
   Settings,
+  Bell,
   MapPin,
   BookCheckIcon,
 } from "lucide-react";
@@ -36,7 +37,10 @@ const LinkItems: Array<{
   path: string;
   roles?: string[];
 }> = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { name: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/dashboard"
+  },
   {
     name: "Metrics",
     icon: BarChart3,
@@ -56,12 +60,22 @@ const LinkItems: Array<{
     roles: ["admin", "provider", "driver"],
   },
   {
+    name: "Notifications",
+    icon: Bell,
+    path: "/dashboard/notifications",
+    roles: ["admin", "provider", "attendant", "driver"],
+  },
+  {
     name: "Settings",
     icon: Settings,
     path: "/dashboard/settings",
     roles: ["admin", "provider", "attendant", "driver"],
   },
-  { name: "Users", icon: User, path: "/dashboard/users", roles: ["admin"] },
+  { name: "Users",
+    icon: User,
+    path: "/dashboard/users",
+    roles: ["admin"]
+  },
 ];
 
 const SidebarContent = ({

@@ -12,6 +12,7 @@ const Login = lazy(() => import("../pages/auth/login"));
 const Register = lazy(() => import("../pages/auth/register"));
 const Dashboard = lazy(() => import("../pages/dashboard/Layout"));
 const Booking = lazy(() => import("../pages/dashboard/bookings"));
+const Notifications = lazy(() => import("../pages/dashboard/notifications"));
 const Maps = lazy(() => import("../pages/dashboard/maps"));
 const Settings = lazy(() => import("../pages/dashboard/settings"));
 const Users = lazy(() => import("../pages/dashboard/users"));
@@ -80,6 +81,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<Dash />}>
             <Maps />
+          </Suspense>
+        ),
+      },
+      {
+        path: "notifications",
+        element: (
+          <Suspense fallback={<Dash />}>
+            <Notifications />
           </Suspense>
         ),
       },

@@ -1,3 +1,4 @@
+import { FiMenu, FiChevronDown } from "react-icons/fi";
 import {
   IconButton,
   Avatar,
@@ -15,19 +16,18 @@ import {
   Box,
   useToast,
   Image,
-Link as ChakraLink,
-} from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import Logo from '../../assets/header_logo.png';
-import { FiMenu, FiChevronDown } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { useAdminUsers } from '../../hooks/useAdminUsers';
+  Link as ChakraLink,
+} from "@chakra-ui/react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import Logo from "../../assets/header_logo.png";
+import { useAuth } from "../../hooks/useAuth";
+import { useAdminUsers } from "../../hooks/useAdminUsers";
+import NotificationBell from "../../components/notifications/NotificationBell";
 
 const Header = () => {
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
+  const [userName, setUserName] = useState("");
+  const [email, setEmail] = useState("");
   const { onOpen } = useDisclosure();
   const toast = useToast();
   const { user, logout } = useAuth();
@@ -36,8 +36,8 @@ const Header = () => {
 
   useEffect(() => {
     if (user) {
-      setUserName(user.username ?? "")
-      setEmail(user.email ?? "")
+      setUserName(user.username ?? "");
+      setEmail(user.email ?? "");
     }
   }, [user]);
 
@@ -45,14 +45,14 @@ const Header = () => {
     try {
       await logout();
       toast({
-        title: 'Good Bye ✌️',
-        description: 'Comeback again',
+        title: "Good Bye ✌️",
+        description: "Comeback again",
         status: "success",
         duration: 5000,
         isClosable: true,
-        position: 'top'
+        position: "top",
       });
-      navigate('/login')
+      navigate("/login");
     } catch (error) {
       console.error(error);
     }
@@ -64,73 +64,83 @@ const Header = () => {
       px={{ base: 4, md: 4 }}
       height="20"
       alignItems="center"
-      bg={useColorModeValue('white', 'gray.900')}
+      bg={useColorModeValue("white", "gray.900")}
       borderBottomWidth="1px"
-      borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
-      justifyContent={{ base: 'space-between', md: 'flex-end' }}
+      borderBottomColor={useColorModeValue("gray.200", "gray.700")}
+      justifyContent={{ base: "space-between", md: "flex-end" }}
       top={0}
       right={0}
-      position={'fixed'}
-      w={'full'}
+      position={"fixed"}
+      w={"full"}
       zIndex={9}
     >
       <IconButton
-        display={{ base: 'flex', md: 'none' }}
+        display={{ base: "flex", md: "none" }}
         onClick={onOpen}
         variant="outline"
         aria-label="open menu"
         icon={<FiMenu />}
       />
-      <Text as="h2" display={{ base: 'flex', md: 'none' }} fontSize="xl" fontFamily="monospace" fontWeight="bold" className="flex gap-2" color={'primary.300'}>
-        <Image src={Logo} alt='APS' h='30px' />
+      <Text
+        as="h2"
+        display={{ base: "flex", md: "none" }}
+        fontSize="xl"
+        fontFamily="monospace"
+        fontWeight="bold"
+        className="flex gap-2"
+        color={"primary.300"}
+      >
+        <Image src={Logo} alt="APS" h="30px" />
         APS
       </Text>
-      <HStack spacing={{ base: '0', md: '6' }}>
-        {/* <IconButton size="lg" variant="ghost" aria-label="open menu" icon={<FiBell />} /> */}
-        <Flex alignItems={'center'}>
+
+      <HStack spacing={{ base: "0", md: "6" }}>
+        {/* Notifications Dropdown */}
+        <NotificationBell/>
+
+        {/* User Menu */}
+        <Flex alignItems={"center"}>
           <Menu>
-            <MenuButton py={2} transition="all 0.3s" _focus={{ boxShadow: 'none' }}>
+            <MenuButton py={2} transition="all 0.3s" _focus={{ boxShadow: "none" }}>
               <HStack>
                 <Avatar
-                  size={'sm'}
+                  size={"sm"}
                   src={`https://ui-avatars.com/api/?format=svg&name=${userName}&bold=true&background=random&length=1&rounded=true`}
                 />
-                <VStack display={{ base: 'none', md: 'flex' }} alignItems="flex-start" spacing="1px" ml="2">
+                <VStack
+                  display={{ base: "none", md: "flex" }}
+                  alignItems="flex-start"
+                  spacing="1px"
+                  ml="2"
+                >
                   <Text fontSize="sm">{userName}</Text>
-                  <Text fontSize="xs" color="gray.600">{isAdmin ? 'Admin' : email}</Text>
+                  <Text fontSize="xs" color="gray.600">
+                    {isAdmin ? "Admin" : email}
+                  </Text>
                 </VStack>
-                <Box display={{ base: 'none', md: 'flex' }}>
+                <Box display={{ base: "none", md: "flex" }}>
                   <FiChevronDown />
                 </Box>
               </HStack>
             </MenuButton>
-            <MenuList bg={useColorModeValue('white', 'gray.900')} borderColor={useColorModeValue('gray.200', 'gray.700')}>
+            <MenuList
+              bg={useColorModeValue("white", "gray.900")}
+              borderColor={useColorModeValue("gray.200", "gray.700")}
+            >
               <MenuItem>
-                <ChakraLink
-                  as={Link}
-                  to="/dashboard/settings"
-                  _hover={{ color: "primary.500" }}
-                  color="primary.400"
-                >
+                <ChakraLink as={Link} to="/dashboard/settings">
                   Settings
                 </ChakraLink>
               </MenuItem>
-              {isAdmin && <MenuItem>
-                <ChakraLink
-                  as={Link}
-                  to="/dashboard/users"
-                  _hover={{ color: "primary.500" }}
-                  color="primary.400"
-                >
-                  Users
-                </ChakraLink>
-              </MenuItem>}
+              {isAdmin && (
+                <MenuItem>
+                  <ChakraLink as={Link} to="/dashboard/users">
+                    Users
+                  </ChakraLink>
+                </MenuItem>
+              )}
               <MenuDivider />
-              <MenuItem
-                onClick={handleLogout}
-              >
-                Logout
-              </MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </MenuList>
           </Menu>
         </Flex>

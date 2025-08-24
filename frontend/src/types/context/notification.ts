@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export type NotificationType = 'spot_available' | 'booking_reminder' | 'general';
-
+export type NotificationType =
+  | "spot_available"
+  | "booking_reminder"
+  | "general";
+export interface Paginated<T> {
+  results: T[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
 export interface PushSubscription {
   id: number;
   user: number;
@@ -10,19 +18,24 @@ export interface PushSubscription {
   created_at: string;
 }
 
-export interface Notification {
+export interface Notifications {
   id: number;
-  user: number;
   title: string;
   body: string;
   type: NotificationType;
   sent_at: string;
   delivered: boolean;
-  status: 'pending' | 'sent' | 'failed';
+  status: "pending" | "sent" | "failed";
   is_read: boolean;
   read_at?: string | null;
 }
 
+export interface NotificationResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Notifications[];
+}
 
 export interface EmailPreference {
   id: number;
@@ -40,7 +53,7 @@ export interface NotificationPreference {
 
 export interface NotificationTemplate {
   id: number;
-  event_type: NotificationType | 'booking_created' | 'booking_ended';
+  event_type: NotificationType | "booking_created" | "booking_ended";
   title_template: string;
   body_template: string;
   render?: (context: Record<string, any>) => { title: string; body: string };
@@ -64,7 +77,9 @@ export interface NotificationsContextType {
   updateEmailPreference: (receiveEmails: boolean) => Promise<void>;
 
   /** Push */
-  addPushSubscription: (subscription: Omit<PushSubscription, "id" | "created_at">) => Promise<void>;
+  addPushSubscription: (
+    subscription: Omit<PushSubscription, "id" | "created_at">
+  ) => Promise<void>;
   removePushSubscription: (subscriptionId: number) => Promise<void>;
 
   /** Loading / Error */
@@ -75,8 +90,14 @@ export interface NotificationsContextType {
 
   /** Setters */
   setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
-  setPushSubscriptions: React.Dispatch<React.SetStateAction<PushSubscription[]>>;
-  setEmailPreference: React.Dispatch<React.SetStateAction<EmailPreference | null>>;
-  setNotificationPreference: React.Dispatch<React.SetStateAction<NotificationPreference | null>>;
+  setPushSubscriptions: React.Dispatch<
+    React.SetStateAction<PushSubscription[]>
+  >;
+  setEmailPreference: React.Dispatch<
+    React.SetStateAction<EmailPreference | null>
+  >;
+  setNotificationPreference: React.Dispatch<
+    React.SetStateAction<NotificationPreference | null>
+  >;
   setTemplates: React.Dispatch<React.SetStateAction<NotificationTemplate[]>>;
 }
