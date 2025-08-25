@@ -1,79 +1,74 @@
+import os
 import joblib
 import numpy as np
 import pandas as pd
+from django.conf import settings
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score, brier_score_loss, precision_score
-from parking.ml.data_prep import build_full_dataset
-from django.conf import settings
-import os
+from .data_prep import build_full_dataset
 
 MODEL_DIR = os.path.join(settings.BASE_DIR, "parking", "ml", "model")
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_PATH = os.path.join(MODEL_DIR, "rf_spot_predictor.joblib")
 
+CAT_COLS = ["spot_type"]
+NUM_COLS = ["hour", "dow", "is_weekend", "ratio_15m", "ratio_60m",
+            "changes_last_hour", "last_status", "active_booking", "price_per_hour"]
+FEATURES = CAT_COLS + NUM_COLS
+
+
 def time_train_test_split(df, time_col="timestamp", test_fraction=0.2):
     if df.empty:
         return pd.DataFrame(), pd.DataFrame()
     df_sorted = df.sort_values(time_col)
-    cutoff_index = int(len(df_sorted) * (1 - test_fraction))
-    if cutoff_index == 0 or cutoff_index >= len(df_sorted):
+    cut = int(len(df_sorted) * (1 - test_fraction))
+    if cut <= 0 or cut >= len(df_sorted):
         return df_sorted, pd.DataFrame()
-    train = df_sorted.iloc[:cutoff_index]
-    test = df_sorted.iloc[cutoff_index:]
-    return train, test
+    return df_sorted.iloc[:cut], df_sorted.iloc[cut:]
+
 
 def train_and_save():
-    print("🚀 Starting model training...")
+    print("🚀 Training predictor…")
     df = build_full_dataset()
-    print(f"📊 Dataset built: {df.shape[0]} rows, {df.shape[1]} cols")
-
     if df.empty:
-        print("❌ No data to train on")
-        return
-
-    cat_cols = ["spot_type"]
-    num_cols = [
-        "hour", "dow", "is_weekend",
-        "ratio_15m", "ratio_60m", "changes_last_hour",
-        "last_status", "active_booking", "price_per_hour"
-    ]
-    features = cat_cols + num_cols
+        print("❌ No rows to train.")
+        return None
 
     train, test = time_train_test_split(df, "timestamp", test_fraction=0.2)
     if train.empty or test.empty:
-        print("⚠️ Not enough data for train/test split")
-        return
+        print("⚠️ Not enough data to split; training on all data without test.")
+        train, test = df, pd.DataFrame()
 
-    X_train, y_train = train[features], train["label"]
-    X_test, y_test = test[features], test["label"]
+    X_train, y_train = train[FEATURES], train["label"]
 
-    print(f"🔹 Train size={len(train)}, Test size={len(test)}")
-    print(f"🔹 Train labels balance: {y_train.value_counts().to_dict()}")
-    print(f"🔹 Test labels balance: {y_test.value_counts().to_dict()}")
+    pre = ColumnTransformer(
+        [("cat", OneHotEncoder(handle_unknown="ignore"), CAT_COLS)],
+        remainder="passthrough"
+    )
 
-    preprocessor = ColumnTransformer([
-        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
-    ], remainder="passthrough")
+    clf = RandomForestClassifier(
+        n_estimators=250,
+        random_state=42,
+        n_jobs=-1,
+        class_weight="balanced"
+    )
 
-    clf = RandomForestClassifier(n_estimators=200, n_jobs=-1, random_state=42)
-    pipeline = Pipeline([("pre", preprocessor), ("clf", clf)])
+    pipe = Pipeline([("pre", pre), ("clf", clf)])
+    pipe.fit(X_train, y_train)
 
-    pipeline.fit(X_train, y_train)
-
-    if len(set(y_test)) < 2:
-        print("⚠️ Only one class in test set, skipping AUC/Brier/Precision")
-    else:
-        preds = pipeline.predict_proba(X_test)[:, 1]
+    if not test.empty and len(set(test["label"])) >= 2:
+        X_test, y_test = test[FEATURES], test["label"]
+        preds = pipe.predict_proba(X_test)[:, 1]
         auc = roc_auc_score(y_test, preds)
         brier = brier_score_loss(y_test, preds)
         prec = precision_score(y_test, (preds > 0.5).astype(int))
-        print(f"✅ Trained model AUC={auc:.4f} Brier={brier:.4f} Prec@0.5={prec:.4f}")
+        print(f"✅ AUC={auc:.4f}  Brier={brier:.4f}  Prec@0.5={prec:.4f}")
+    else:
+        print("ℹ️ Skipping metrics: insufficient test class variety.")
 
-    joblib.dump(pipeline, MODEL_PATH)
-    print(f"💾 Saved model to {MODEL_PATH}")
-
-if __name__ == "__main__":
-    train_and_save()
+    joblib.dump(pipe, MODEL_PATH)
+    print(f"💾 Saved → {MODEL_PATH}")
+    return MODEL_PATH
