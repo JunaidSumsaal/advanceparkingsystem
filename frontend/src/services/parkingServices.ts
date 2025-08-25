@@ -111,8 +111,7 @@ export const getNearbySpots = async ({
   limit = 20,
   offset = 0,
 }: {
-  lat: any,
-  lng: any,
+   lat: number; lng: number;
   radius: number,
   limit: number,
   offset: number,

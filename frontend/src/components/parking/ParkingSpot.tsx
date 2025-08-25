@@ -1,16 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect } from "react";
 import { Box, Heading, Spinner, VStack } from "@chakra-ui/react";
 import { useParkingService } from "../../hooks/useParkingService";
 import ParkingSpotCard from "./ParkingSpotCard";
+import { useNearbySpots } from "../../hooks/useNearbySpots";
 ;
 
-const ParkingSpotPage = ({ latitude, longitude }: {latitude: string, longitude: string }) => {
-  const { spots, loading, fetchAvailableSpots, bookParkingSpot } = useParkingService();
-
-  useEffect(() => {
-    fetchAvailableSpots(latitude, longitude);
-  }, [latitude, longitude, fetchAvailableSpots]);
+const ParkingSpotPage = () => {
+  const { loading, bookParkingSpot } = useParkingService();
+  const {spots} = useNearbySpots();
 
   const handleBooking = (spotId: number) => {
     const startTime = new Date().toISOString();

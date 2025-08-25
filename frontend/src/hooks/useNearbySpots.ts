@@ -167,5 +167,6 @@ export const useNearbySpots = () => {
     setRadius,
     setFilter,
     loaderRef,
+    fetchSpots,
   };
 };
