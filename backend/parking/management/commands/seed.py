@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from faker import Faker
 from accounts.models import AuditLog, NewsletterSubscription
 from parking.models import ArchiveReport, AttendantAssignmentLog, ModelEvaluationLog, ParkingFacility, ParkingSpot, SpotAvailabilityLog, Booking, SpotPredictionLog, SpotPriceLog, SpotReview
-from notifications.models import EmailPreference, Notification
+from notifications.models import Notification, NotificationPreference
 from django.utils import timezone
 from datetime import timedelta
 import random
@@ -25,7 +25,7 @@ class Command(BaseCommand):
         AuditLog.objects.all().delete()
         Notification.objects.all().delete()
         NewsletterSubscription.objects.all().delete()
-        EmailPreference.objects.all().delete()
+        NotificationPreference.objects.all().delete()
 
         # Then delete other models
         Booking.objects.all().delete()
@@ -99,8 +99,8 @@ class Command(BaseCommand):
         # --- Create User-related preferences and subscriptions ---
         self.stdout.write(self.style.WARNING("Creating user preferences..."))
         for user in customers + providers + attendants:
-            EmailPreference.objects.create(
-                user=user, receive_emails=random.choice([True, False]))
+            NotificationPreference.objects.create(
+                user=user, push_enabled=random.choice([True, False]), email_enabled=random.choice([True, False]), newsletter_enabled=random.choice([True, False]))
             NewsletterSubscription.objects.create(
                 user=user, email=user.email, subscribed=random.choice([True, False]))
         self.stdout.write(self.style.SUCCESS(
@@ -155,21 +155,16 @@ class Command(BaseCommand):
                 spots.append(spot)
         self.stdout.write(self.style.SUCCESS("Spots created"))
 
-
         # --- Logs & Bookings
         for spot in spots:
             current_time = timezone.now() - timedelta(days=7)
             is_available = True
 
             for i in range(300):  # 300 log entries per spot
-                # Toggle availability occasionally
-                if i % 5 == 0 or random.random() < 0.2:
-                    is_available = not is_available
-
                 SpotAvailabilityLog.objects.create(
                     parking_spot=spot,
-                    timestamp=current_time,
-                    is_available=is_available,
+                    timestamp=timezone.now() - timedelta(minutes=60 - i),
+                    is_available=random.choice([True, False]),
                     changed_by=None
                 )
 
@@ -179,7 +174,7 @@ class Command(BaseCommand):
                     booking = Booking.objects.create(
                         user=booking_user,
                         parking_spot=spot,
-                        start_time=current_time,
+                        start_time=timezone.now() - timedelta(minutes=60 - i),
                         is_active=random.choice([True, False]),
                         total_price=spot.price_per_hour * 2
                     )
@@ -199,17 +194,16 @@ class Command(BaseCommand):
 
         # --- AI Predictions
         for spot in spots:
-            current_time = timezone.now() - timedelta(days=7)
             for i in range(100):  # 100 AI prediction logs
                 prediction = SpotPredictionLog.objects.create(
                     parking_spot=spot,
-                    predicted_for_time=current_time,
+                    predicted_for_time=timezone.now() - timedelta(minutes=60 - i),
                     probability=random.uniform(0.5, 1.0),
                     model_version="v1.0",
                 )
 
                 # Archive some prediction logs
-                if random.random() < 0.2:  # 20% chance of archiving
+                if random.random() < 0.4:  # 40% chance of archiving
                     prediction.is_active = False
                     prediction.save()
 
