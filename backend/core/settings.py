@@ -61,18 +61,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'parking.middleware.PredictionLoggingMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "https://advancepackingsystem.onrender.com",
 ]
-
-# incase for future cookie
-# CORS_ALLOW_CREDENTIALS = True
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://advancepackingsystem.onrender.com",
-# ]
 
 
 ROOT_URLCONF = 'core.urls'
@@ -178,7 +173,7 @@ CELERY_BEAT_SCHEDULE = {
     "provider-daily-digest": {
         "task": "notifications.tasks.daily_digest_for_provider",
         "schedule": crontab(hour=7, minute=0),
-        "args": (1,),  # example provider_id; replace with a beat that loops providers if needed to whoever needs it in the system
+        "args": (1,),
     },
 }
 
