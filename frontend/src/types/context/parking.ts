@@ -26,7 +26,7 @@ export interface Spot {
   name: string;
   latitude: number;
   longitude: number;
-  spot_type: 'public' | 'private';
+  type: 'public' | 'private';
   price_per_hour: number;
   base_price_per_hour: number;
   is_dynamic_pricing: boolean;
@@ -36,6 +36,7 @@ export interface Spot {
   created_by: User;
   is_active: boolean;
   dynamic_price_per_hour: number;
+  
 }
 
 export interface Booking {

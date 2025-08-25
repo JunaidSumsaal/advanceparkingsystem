@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { getNearbySpots, bookSpot, getSpotAvailabilityLogs } from "../services/parkingServices";
+import { getNearbySpots, createBooking, getSpotAvailabilityLogs } from "../services/parkingServices";
 
 export const useParkingService = () => {
   const [spots, setSpots] = useState([]);
@@ -23,7 +23,7 @@ export const useParkingService = () => {
   // Book parking spot
   const bookParkingSpot = async (spotId: number, startTime: string, endTime: string) => {
     try {
-      await bookSpot({ spot: spotId, start_time: startTime, end_time: endTime })
+      await createBooking({ spot: spotId, start_time: startTime, end_time: endTime })
       .then((params: any) => {
       fetchAvailableSpots(params.latitude, params.longitude);
       })

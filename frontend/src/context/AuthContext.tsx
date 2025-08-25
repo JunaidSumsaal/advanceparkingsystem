@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   /** Register */
   const register = useCallback(
-    async (userData: { username: string; email: string; password: string }) => {
+    async (userData: { username: string; email: string; password: string, role?: string }) => {
       try {
         const response = await apiRegister(userData);
 

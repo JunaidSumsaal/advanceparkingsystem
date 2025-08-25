@@ -64,7 +64,6 @@ export const useNotifications = () => {
         prev.map((n) => (n.id === id ? { ...n, is_read: false } : n))
       );
       setUnreadCount((prev) => Math.max(prev + 1, 0));
-      console.log('unread');
     } catch (e) {
       console.error("Failed to mark as unread:", e);
     }

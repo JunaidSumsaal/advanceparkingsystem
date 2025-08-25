@@ -15,9 +15,11 @@ export interface User {
   is_active?: boolean;
   is_staff?: boolean;
   is_superuser?: boolean;
-  role: string;
+  role: string | null;
   default_radius_km?: string
 }
+
+export type Role = "driver" | "provider" | "attendant" | "admin" | null;
 
 
 export interface Credentials {
