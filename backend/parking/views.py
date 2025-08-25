@@ -194,14 +194,20 @@ class NearbyParkingSpotsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        lat = request.query_params.get('lat')
-        lng = request.query_params.get('lng')
-        radius_km = float(request.query_params.get(
-            'radius', getattr(request.user, 'default_radius_km', 2)))
+        lat = request.query_params.get("lat")
+        lng = request.query_params.get("lng")
+        radius_km = float(
+            request.query_params.get("radius", getattr(
+                request.user, "default_radius_km", 2))
+        )
 
         if not lat or not lng:
-            log_action(request.user, "nearby_spots_error",
-                       "Latitude and longitude not provided", request)
+            log_action(
+                request.user,
+                "nearby_spots_error",
+                "Latitude and longitude not provided",
+                request,
+            )
             return Response({"error": "Latitude and longitude are required."}, status=400)
 
         try:
@@ -210,16 +216,64 @@ class NearbyParkingSpotsView(APIView):
         except ValueError:
             return Response({"error": "Invalid coordinates."}, status=400)
 
+        # all available spots
         spots = ParkingSpot.objects.filter(is_available=True)
+        if not spots.exists():
+            log_action(request.user, "nearby_spots_empty",
+                       "No available spots in system", request)
+            return Response(
+                {
+                    "message": "No available spots in the system.",
+                    "total_available": 0,
+                    "within_radius": 0,
+                    "results": [],
+                },
+                status=204,
+            )
+
+        # filter by radius
         nearby_spots = [
-            spot for spot in spots
-            if calculate_distance(lat, lng, float(spot.latitude), float(spot.longitude)) <= radius_km
+            spot
+            for spot in spots
+            if calculate_distance(lat, lng, float(spot.latitude), float(spot.longitude))
+            <= radius_km
         ]
+
+        if not nearby_spots:
+            log_action(
+                request.user,
+                "nearby_spots_empty_radius",
+                f"No spots found within {radius_km} km",
+                request,
+            )
+            return Response(
+                {
+                    "message": f"No available spots found within {radius_km} km.",
+                    "total_available": spots.count(),
+                    "within_radius": 0,
+                    "results": [],
+                },
+                status=200,
+            )
+
         serializer = ParkingSpotSerializer(nearby_spots, many=True)
-        log_action(request.user, "nearby_spots_viewed",
-                   f"User viewed nearby spots within {radius_km} km", request)
+        log_action(
+            request.user,
+            "nearby_spots_viewed",
+            f"User viewed {len(nearby_spots)} spots within {radius_km} km",
+            request,
+        )
         update_available_spots_metric()
-        return Response(serializer.data)
+
+        return Response(
+            {
+                "message": f"{len(nearby_spots)} spots found within {radius_km} km.",
+                "total_available": spots.count(),
+                "within_radius": len(nearby_spots),
+                "results": serializer.data,
+            },
+            status=200,
+        )
 
 
 class NearbyPredictionsView(APIView):
@@ -358,15 +412,16 @@ class NavigateToSpotView(APIView):
             log_action(request.user, "navigate_to_spot_error",
                        "User attempted to navigate to a non-existent parking spot", request)
             return Response({"error": "Spot not found"}, status=404)
-        
+
         send_notification_async.delay(
             request.user.id,
             "📍 Starting Navigation",
             f"Navigate to {spot.name}. Drive safely!",
             type_="navigation_start",
-            extra={"spot_id": spot.id, "latitude": spot.latitude, "longitude": spot.longitude}
+            extra={"spot_id": spot.id, "latitude": spot.latitude,
+                   "longitude": spot.longitude}
         )
-        
+
         maps_url = f"https://www.google.com/maps/dir/?api=1&destination={spot.latitude},{spot.longitude}"
         SPOT_SELECTED.inc()
         update_available_spots_metric()
@@ -378,7 +433,6 @@ class NavigateToSpotView(APIView):
 class SpotReviewCreateView(generics.CreateAPIView):
     serializer_class = SpotReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -390,7 +444,7 @@ class SpotAvailabilityLogListView(generics.ListAPIView):
     queryset = SpotAvailabilityLog.objects.all()
     serializer_class = SpotAvailabilityLogSerializer
     permission_classes = [permissions.IsAdminUser]
-    
+
     def get_queryset(self):
         user = self.request.user
         if user.role == "provider":
