@@ -5,7 +5,6 @@ from parking.utils import notify_spot_available
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
-
 class ActiveFacilityManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_archived=False)
@@ -14,6 +13,7 @@ class ActiveFacilityManager(models.Manager):
 class ActiveSpotManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_archived=False)
+
 
 class ActiveManager(models.Manager):
     def get_queryset(self):
@@ -48,9 +48,9 @@ class ParkingFacility(models.Model):
     is_active = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
     objects = ActiveFacilityManager()
-    active = ActiveManager() 
+    active = ActiveManager()
     all_objects = models.Manager()
-        
+
     def soft_delete(self):
         self.is_active = False
         self.save(update_fields=["is_active"])
@@ -123,9 +123,9 @@ class ParkingSpot(models.Model):
     )
     is_active = models.BooleanField(default=True)
     objects = ActiveSpotManager()
-    active = ActiveManager() 
+    active = ActiveManager()
     all_objects = models.Manager()
-        
+
     def soft_delete(self):
         self.is_active = False
         self.save(update_fields=["is_active"])
@@ -298,7 +298,8 @@ class ArchiveReport(models.Model):
         ("daily", "Daily"),
         ("weekly", "Weekly"),
     ]
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     body = models.TextField()
     period = models.CharField(max_length=20, choices=PERIOD_CHOICES)

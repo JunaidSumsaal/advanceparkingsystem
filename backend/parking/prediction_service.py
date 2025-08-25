@@ -1,61 +1,46 @@
+import math
+import logging
 from datetime import timedelta
 from django.utils import timezone
 from .models import SpotAvailabilityLog, SpotPredictionLog
-import math
-import logging
 
 logger = logging.getLogger(__name__)
 
 def compute_probability(spot, lookback_entries=200):
-    """
-        Simple heuristic:
-            - Use recent availability history (last N logs) to compute availability ratio.
-            - Weight recent entries more heavily.
-            - Combine with current spot.is_available to nudge score.
-        Returns probability in [0,1].
-    """
-    logs_qs = SpotAvailabilityLog.objects.filter(parking_spot=spot).order_by('-timestamp')[:lookback_entries]
-    logs = list(logs_qs)
+    logs = list(
+        SpotAvailabilityLog.objects.filter(parking_spot=spot)
+        .order_by("-timestamp")[:lookback_entries]
+    )
     if not logs:
         return 0.6 if spot.is_available else 0.3
 
-    total_weight = 0.0
-    weighted_sum = 0.0
+    total_w = 0.0
+    w_sum = 0.0
     for i, log in enumerate(logs):
-        weight = math.exp(-i / 50.0)
-        total_weight += weight
-        weighted_sum += (1.0 if log.is_available else 0.0) * weight
+        w = math.exp(-i / 50.0)
+        total_w += w
+        w_sum += (1.0 if log.is_available else 0.0) * w
 
-    ratio = weighted_sum / total_weight if total_weight else 0.0
-
+    ratio = (w_sum / total_w) if total_w else 0.0
     prob = 0.7 * ratio + 0.3 * (1.0 if spot.is_available else 0.0)
-
-    prob = max(0.0, min(1.0, prob))
-    return prob
+    return max(0.0, min(1.0, prob))
 
 def predict_spots_nearby(spots, time_ahead_minutes=15):
-    """
-        For a list/queryset of ParkingSpot objects, produce predictions.
-        Returns list of dicts with parking_spot and probability.
-        Also writes SpotPredictionLog entries.
-    """
     results = []
     predicted_for = timezone.now() + timedelta(minutes=time_ahead_minutes)
 
     for spot in spots:
-        p = compute_probability(spot)
         try:
+            p = compute_probability(spot)
             SpotPredictionLog.objects.create(
                 parking_spot=spot,
                 probability=p,
-                predicted_for_time=predicted_for
+                predicted_for_time=predicted_for,
+                model_version="v1",
             )
-        except Exception as e:
-            logger.exception("Failed to save SpotPredictionLog: %s", e)
-        results.append({
-            "spot": spot,
-            "probability": p,
-            "predicted_for_time": predicted_for
-        })
+            results.append({"spot": spot, "probability": p, "predicted_for_time": predicted_for})
+        except Exception:
+            logger.exception("SpotPredictionLog save failed for spot=%s", spot.id)
+
     results.sort(key=lambda x: x["probability"], reverse=True)
     return results

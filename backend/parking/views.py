@@ -5,8 +5,8 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from math import radians
-from accounts.utils import IsProviderOrAdmin, IsAdminOrSuperuser, IsAttendantOrDriver, IsAdminOrFacilityProvider, log_action
-from notifications.utils import notify_user, push_realtime_notification
+from accounts.utils import IsProviderOrAdmin, IsAdminOrSuperuser, IsAdminOrFacilityProvider, log_action
+from notifications.tasks import send_notification_async
 from parking.utils import calculate_distance
 from .models import ArchiveReport, ParkingFacility, ParkingSpot, Booking, SpotAvailabilityLog, SpotPredictionLog, SpotPriceLog
 from .serializers import (
@@ -297,33 +297,6 @@ class NearbyPredictionsView(APIView):
             return Response(serializer.data)
 
 
-class BookParkingSpotView(generics.CreateAPIView):
-    serializer_class = BookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        BOOKING_CREATED.inc()
-        spot = serializer.validated_data['parking_spot']
-        if spot.provider == self.request.user:
-            log_action(self.request.user, "booking_own_spot_denied",
-                       "User attempted to book their own parking spot", self.request)
-            raise PermissionDenied("You cannot book your own spot.")
-        if not spot.is_available:
-            log_action(self.request.user, "booking_spot_unavailable",
-                       "User attempted to book an unavailable parking spot", self.request)
-            raise PermissionDenied("Spot is not available.")
-        booking = serializer.save(user=self.request.user)
-        notify_user(
-            booking.user,
-            "booking_created",
-            {"spot_name": booking.parking_spot.name,
-                "facility_name": booking.parking_spot.facility.name},
-        )
-        update_available_spots_metric()
-        log_action(self.request.user, "book_parking_spot",
-                   f"User booked parking spot {spot.name}", self.request)
-
-
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
@@ -333,7 +306,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         spot_id = request.data.get("parking_spot")
         try:
             spot = ParkingSpot.objects.get(id=spot_id, is_available=True)
-            push_realtime_notification(
+            send_notification_async(
                 spot.user,
                 "booking_created",
                 {"spot_name": spot.name, "facility_name": spot.facility.name},
@@ -385,6 +358,15 @@ class NavigateToSpotView(APIView):
             log_action(request.user, "navigate_to_spot_error",
                        "User attempted to navigate to a non-existent parking spot", request)
             return Response({"error": "Spot not found"}, status=404)
+        
+        send_notification_async.delay(
+            request.user.id,
+            "📍 Starting Navigation",
+            f"Navigate to {spot.name}. Drive safely!",
+            type_="navigation_start",
+            extra={"spot_id": spot.id, "latitude": spot.latitude, "longitude": spot.longitude}
+        )
+        
         maps_url = f"https://www.google.com/maps/dir/?api=1&destination={spot.latitude},{spot.longitude}"
         SPOT_SELECTED.inc()
         update_available_spots_metric()

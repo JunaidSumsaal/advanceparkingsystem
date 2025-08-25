@@ -1,7 +1,6 @@
 from django.utils import timezone
-from .models import SpotPriceLog
-from .models import ParkingSpot
 from accounts.utils import log_action
+from .models import ParkingSpot, SpotPriceLog
 from core.metrics import AVG_PRICE
 
 def calculate_dynamic_price(spot: ParkingSpot) -> float:
@@ -13,8 +12,9 @@ def calculate_dynamic_price(spot: ParkingSpot) -> float:
 
     total = spot.facility.spots.count()
     booked = spot.facility.spots.filter(is_available=False).count()
-    occupancy = booked / total if total else 0
+    occupancy = (booked / total) if total else 0.0
 
+    # occupancy multiplier
     if occupancy >= 0.8:
         price *= 1.3
     elif occupancy >= 0.5:
@@ -22,29 +22,32 @@ def calculate_dynamic_price(spot: ParkingSpot) -> float:
     else:
         price *= 0.9
 
+    # rush hours
     if hour in range(7, 10) or hour in range(16, 20):
         price *= 1.2
 
+    # weekend discount
     if weekday >= 5:
         price *= 0.95
 
     return round(price, 2)
 
-
 def update_dynamic_prices(user=None):
     updated = 0
-    for spot in ParkingSpot.objects.select_related("facility").all():
+    spots = ParkingSpot.objects.select_related("facility").all()
+    for spot in spots:
         new_price = calculate_dynamic_price(spot)
         if new_price != float(spot.price_per_hour):
             SpotPriceLog.objects.create(
                 parking_spot=spot,
                 old_price=spot.price_per_hour,
-                new_price=new_price
+                new_price=new_price,
             )
             spot.price_per_hour = new_price
             spot.save(update_fields=["price_per_hour"])
             updated += 1
             log_action(user, "dynamic_price_update", f"Spot {spot.id} new price={new_price}", None)
-    AVG_PRICE.set(sum(float(s.price_per_hour) for s in ParkingSpot.objects.all()) / ParkingSpot.objects.count())
-    return updated
 
+    count = ParkingSpot.objects.count() or 1
+    AVG_PRICE.set(sum(float(s.price_per_hour) for s in spots) / count)
+    return updated

@@ -1,202 +1,143 @@
-from django.db.models.signals import post_save, pre_delete, pre_save
+import random
+from datetime import timedelta
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from accounts.utils import log_action
-from notifications.models import PushSubscription, Notification
-from notifications.utils import send_web_push, log_notification_event, send_spot_available_notification
+from django.utils import timezone
+from django.contrib.auth import get_user_model
 from notifications.tasks import send_notification_async, booking_reminder_task
+from notifications.models import PushSubscription
+from notifications.utils import send_web_push
 from .utils import calculate_distance, send_websocket_update
-from .models import ParkingSpot, SpotAvailabilityLog, Booking, ParkingFacility
+from .models import ParkingSpot, Booking, ParkingFacility
 
+User = get_user_model()
 
 @receiver(post_save, sender=ParkingFacility)
-def cascade_archive_spots(sender, instance, **kwargs):
-    if not instance.is_active:
-        spots = ParkingSpot.objects.filter(facility=instance, is_active=True)
-        total_cancelled = 0
+def facility_archived_cascade(sender, instance, **kwargs):
+    if instance.is_active:
+        return
 
-        for spot in spots:
-            spot.is_active = False
-            spot.save()
+    spots = ParkingSpot.objects.filter(facility=instance, is_active=True)
+    total_cancelled = 0
 
-            active_bookings = Booking.objects.filter(
-                parking_spot=spot, is_active=True)
-            total_cancelled += active_bookings.count()
+    for spot in spots:
+        spot.is_active = False
+        spot.save(update_fields=["is_active"])
 
-            for booking in active_bookings:
-                booking.is_active = False
-                booking.end_time = booking.end_time or booking.start_time
-                booking.save()
-
-                Notification.objects.create(
-                    user=booking.user,
-                    title="Booking Cancelled",
-                    body=f"Your booking for {spot.name} was cancelled because the facility was archived.",
-                    type="general",
-                    status="sent",
-                    delivered=True
-                )
-
-                log_action(
-                    booking.user,
-                    "booking_cancelled_facility_archive",
-                    f"Booking for spot {spot.name} cancelled due to facility {instance.name} archive",
-                    None
-                )
-
-        if total_cancelled > 0:
-            Notification.objects.create(
-                user=instance.provider,
-                title="Facility Archived",
-                body=f"Facility {instance.name} archived. {total_cancelled} active bookings were cancelled.",
-                type="general",
-                status="sent",
-                delivered=True
-            )
-            for attendant in instance.attendants.all():
-                Notification.objects.create(
-                    user=attendant,
-                    title="Facility Archived",
-                    body=f"Facility {instance.name} archived. {total_cancelled} active bookings were cancelled.",
-                    type="general",
-                    status="sent",
-                    delivered=True
-                )
-
-            log_action(
-                instance.provider,
-                "facility_archived",
-                f"Facility {instance.name} archived. {total_cancelled} bookings cancelled.",
-                None
-            )
-
-
-@receiver(post_save, sender=ParkingSpot)
-def handle_spot_archive(sender, instance, **kwargs):
-    if not instance.is_active:
-        active_bookings = Booking.objects.filter(
-            parking_spot=instance, is_active=True)
-        cancelled_count = active_bookings.count()
-
-        for booking in active_bookings:
+        for booking in Booking.objects.filter(parking_spot=spot, is_active=True):
             booking.is_active = False
             booking.end_time = booking.end_time or booking.start_time
-            booking.save()
+            booking.save(update_fields=["is_active", "end_time"])
+            total_cancelled += 1
 
-            Notification.objects.create(
-                user=booking.user,
-                title="Booking Cancelled",
-                body=f"Your booking for {instance.name} was cancelled because the spot was archived.",
-                type="general",
-                status="sent",
-                delivered=True
+            send_notification_async.delay(
+                booking.user_id,
+                "Booking Cancelled",
+                f"Your booking for {spot.name} was cancelled because the facility was archived.",
+                "general",
             )
 
-            log_action(
-                booking.user,
-                "booking_cancelled_spot_archive",
-                f"Booking for spot {instance.name} cancelled due to spot archive",
-                None
+    if total_cancelled > 0:
+        recipients = [instance.provider] + list(instance.attendants.all())
+        for r in recipients:
+            send_notification_async.delay(
+                r.id,
+                "Facility Archived",
+                f"Facility {instance.name} archived. {total_cancelled} active bookings were cancelled.",
+                "general",
             )
 
-        if cancelled_count > 0:
-            Notification.objects.create(
-                user=instance.provider,
-                title="Spot Archived",
-                body=f"Spot {instance.name} archived. {cancelled_count} active bookings were cancelled.",
-                type="general",
-                status="sent",
-                delivered=True
-            )
-            if instance.facility:
-                for attendant in instance.facility.attendants.all():
-                    Notification.objects.create(
-                        user=attendant,
-                        title="Spot Archived",
-                        body=f"Spot {instance.name} archived. {cancelled_count} active bookings were cancelled.",
-                        type="general",
-                        status="sent",
-                        delivered=True
-                    )
-
-            log_action(
-                instance.provider,
-                "spot_archived",
-                f"Spot {instance.name} archived. {cancelled_count} bookings cancelled.",
-                None
-            )
-
-
-@receiver(pre_save, sender=ParkingSpot)
-def spot_availability_change(sender, instance, **kwargs):
-    if not instance.pk:
-        return
-    old_instance = ParkingSpot.objects.get(pk=instance.pk)
-    if not old_instance.is_available and instance.is_available:
-        # Find subscriptions within radius
-        subscriptions = PushSubscription.objects.all()
-        for sub in subscriptions:
-            user_profile = getattr(sub.user, "profile", None)
-            if user_profile:
-                distance = calculate_distance(
-                    float(instance.latitude),
-                    float(instance.longitude),
-                    float(user_profile.latitude),
-                    float(user_profile.longitude)
-                )
-                if distance <= getattr(user_profile, "search_radius_km", 2):
-                    subscription_info = {
-                        "endpoint": sub.endpoint,
-                        "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
-                    }
-                    status = "sent" if send_web_push(
-                        subscription_info,
-                        "Parking Spot Available",
-                        f"{instance.name} is now free!"
-                    ) else "failed"
-                    log_notification_event(sub.user, "Parking Spot Available",
-                                           f"{instance.name} is now free!",
-                                           "spot_available", status)
-
-
-@receiver(pre_save, sender=ParkingSpot)
-def notify_availability_change(sender, instance, **kwargs):
-    if not instance.pk:
+# -------- Spot archived -> cancel bookings --------
+@receiver(post_save, sender=ParkingSpot)
+def spot_archived_cancel(sender, instance, **kwargs):
+    if instance.is_active:
         return
 
+    active = Booking.objects.filter(parking_spot=instance, is_active=True)
+    for booking in active:
+        booking.is_active = False
+        booking.end_time = booking.end_time or booking.start_time
+        booking.save(update_fields=["is_active", "end_time"])
+
+        send_notification_async.delay(
+            booking.user_id,
+            "Booking Cancelled",
+            f"Your booking for {instance.name} was cancelled because the spot was archived.",
+            "general",
+        )
+
+    if active.exists():
+        recipients = [instance.provider]
+        if instance.facility:
+            recipients += list(instance.facility.attendants.all())
+        for r in recipients:
+            send_notification_async.delay(
+                r.id,
+                "Spot Archived",
+                f"Spot {instance.name} archived. {active.count()} active bookings were cancelled.",
+                "general",
+            )
+
+# -------- Spot becomes available --------
+@receiver(pre_save, sender=ParkingSpot)
+def spot_availability_broadcast(sender, instance, **kwargs):
+    if not instance.pk:
+        return
     try:
-        old_instance = ParkingSpot.objects.get(pk=instance.pk)
+        old = ParkingSpot.objects.get(pk=instance.pk)
     except ParkingSpot.DoesNotExist:
         return
 
-    if not old_instance.is_available and instance.is_available:
-        send_spot_available_notification(instance)
-        send_websocket_update(instance)
+    if old.is_available or not instance.is_available:
+        return
 
+    # Push to nearby subscribers
+    subs = PushSubscription.objects.select_related("user").all()
+    for sub in subs:
+        profile = getattr(sub.user, "profile", None)
+        if not profile:
+            continue
+        dist = calculate_distance(float(instance.latitude), float(instance.longitude),
+                                  float(profile.latitude), float(profile.longitude))
+        if dist <= getattr(profile, "search_radius_km", 2.0):
+            send_web_push(sub, "🚗 Parking Spot Available", f"{instance.name} is now free!")
 
-# parking/signals.py (examples)
-
-@receiver(post_save, sender=Booking)
-def booking_created(sender, instance, created, **kwargs):
-    if created:
+    # In-app: send 2-3 random available spots (simple v1; later filter by location)
+    available_ids = list(
+        ParkingSpot.objects.filter(is_available=True).values_list("id", flat=True)[:20]
+    )
+    sample_ids = random.sample(available_ids, min(len(available_ids), 3)) if available_ids else []
+    for user_id in User.objects.values_list("id", flat=True):
         send_notification_async.delay(
-            instance.user_id,
-            "Booking Confirmed",
-            f"You booked {instance.parking_spot.name}. Safe driving!",
-            "booking_created",
-            {"spot_id": instance.parking_spot_id},
-        )
-        # optional reminder in 30 minutes
-        booking_reminder_task.apply_async(args=[instance.id], countdown=30*60)
-
-
-@receiver(post_save, sender=ParkingSpot)
-def spot_status_changed(sender, instance, **kwargs):
-    if instance.is_available:
-        # notify subscribers of this spot/provider (simplified to provider)
-        send_notification_async.delay(
-            instance.provider_id,
-            "Spot Available",
-            f"{instance.name} is now available.",
+            user_id,
+            "🚗 Spots Available Nearby",
+            "Good news! A few spots are open near you. Book now.",
             "spot_available",
-            {"spot_id": instance.id},
+            {"spot_ids": sample_ids},
         )
+
+    # Realtime WS broadcast
+    send_websocket_update(instance)
+
+# -------- Booking created -> confirmations & reminders --------
+@receiver(post_save, sender=Booking)
+def booking_notifications(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    send_notification_async.delay(
+        instance.user_id,
+        "Booking Confirmed",
+        f"You booked {instance.parking_spot.name}. Safe driving!",
+        "booking_created",
+        {"spot_id": instance.parking_spot_id},
+    )
+
+    # quick reminder in 30 minutes
+    booking_reminder_task.apply_async(args=[instance.id], countdown=30 * 60)
+
+    # scheduled reminder 30 minutes before start
+    if instance.start_time:
+        eta = instance.start_time - timedelta(minutes=30)
+        if eta > timezone.now():
+            booking_reminder_task.apply_async(args=[instance.id], eta=eta)

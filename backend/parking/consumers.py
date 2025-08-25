@@ -6,32 +6,29 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 logger = logging.getLogger(__name__)
 
 class ParkingConsumer(AsyncWebsocketConsumer):
+    GROUP = "parking_updates"
+
     async def connect(self):
         user = self.scope.get("user")
-        await self.channel_layer.group_add("parking_updates", self.channel_name)
+        await self.channel_layer.group_add(self.GROUP, self.channel_name)
         await self.accept()
-        
-        logger.info(f"WS connect: channel={self.channel_name} user={getattr(user,'username',None)}")
-
+        logger.info("WS connect channel=%s user=%s", self.channel_name, getattr(user, "username", None))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard("parking_updates", self.channel_name)
-        logger.info(f"WS disconnect: channel={self.channel_name} code={close_code}")
+        await self.channel_layer.group_discard(self.GROUP, self.channel_name)
+        logger.info("WS disconnect channel=%s code=%s", self.channel_name, close_code)
 
     async def receive(self, text_data):
-        # Not expecting incoming messages for now
-        pass
+        # no inbound commands for now
+        return
 
     async def parking_update(self, event):
-        data = event.get("data", {})
-        send_start = time.time()
+        payload = event.get("data", {})
+        t0 = time.time()
+        ok = True
         try:
-            await self.send(text_data=json.dumps(event["data"]))
-            success = True
-        except Exception as e:
-            logger.exception("Failed to send WS parking_update")
-            success = False
-        latency = time.time() - send_start
-        # SRE: log delivery latency & success
-        logger.info(f"WS send latency={latency:.3f}s success={success} channel={self.channel_name}")
-
+            await self.send(text_data=json.dumps(payload))
+        except Exception:
+            ok = False
+            logger.exception("WS parking_update send failed")
+        logger.info("WS send latency=%.3fs ok=%s channel=%s", time.time() - t0, ok, self.channel_name)
