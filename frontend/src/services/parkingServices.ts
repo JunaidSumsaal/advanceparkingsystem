@@ -110,6 +110,12 @@ export const getNearbySpots = async ({
   radius = 2,
   limit = 20,
   offset = 0,
+}: {
+  lat: any,
+  lng: any,
+  radius: number,
+  limit: number,
+  offset: number,
 }) => {
   const res = await apiHelper.get(`${PARKING}${PARK_NEARBY}/`, {
     params: { lat, lng, radius, limit, offset },
