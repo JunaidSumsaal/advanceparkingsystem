@@ -1,3 +1,5 @@
+from .ml.train import train_and_save
+from .ml.eval import evaluate_model
 from django.core.management import call_command
 from django.utils import timezone
 from datetime import timedelta
@@ -46,3 +48,13 @@ def send_booking_expiry_reminders():
             f"Your booking for {b.parking_spot.name} will expire in 10 minutes.",
             "booking_reminder",
         )
+
+
+
+@shared_task
+def retrain_spot_predictor():
+    return train_and_save()
+
+@shared_task
+def evaluate_spot_predictor():
+    return evaluate_model()
