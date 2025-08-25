@@ -11,12 +11,12 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
-  useDisclosure,
   Flex,
   Box,
   useToast,
   Image,
   Link as ChakraLink,
+  type BoxProps,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -25,10 +25,12 @@ import { useAuth } from "../../hooks/useAuth";
 import { useAdminUsers } from "../../hooks/useAdminUsers";
 import NotificationBell from "../../components/notifications/NotificationBell";
 
-const Header = () => {
+interface SidebarProps extends BoxProps {
+  onOpen: () => void;
+}
+const Header = ({onOpen}: SidebarProps) => {
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
-  const { onOpen } = useDisclosure();
   const toast = useToast();
   const { user, logout } = useAuth();
   const { isAdmin } = useAdminUsers();

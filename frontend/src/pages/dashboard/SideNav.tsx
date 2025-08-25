@@ -26,6 +26,7 @@ import { FiHome } from "react-icons/fi";
 import Logo from "../../assets/header_logo.png";
 import { Link as RouterLink } from "react-router-dom";
 import { useUserRole } from "../../hooks/useUserRole";
+import Header from "./Header";
 interface SidebarProps extends BoxProps {
   onClose: () => void;
 }
@@ -194,6 +195,7 @@ const Sidebar = () => {
 
   return (
     <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
+      <Header onOpen={onOpen} />
       {/* For Desktop View */}
       <SidebarContent
         activeLink={activeLink}

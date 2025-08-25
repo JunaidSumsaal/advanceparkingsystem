@@ -124,9 +124,9 @@ export default function NotificationsPage() {
 
   return (
     <Box p={6}>
-      <HStack justify="space-between" mb={4} align="center">
+      <HStack justify="space-between" mb={4} align="center" flexWrap={'wrap'}>
         <Heading size="lg">Notifications</Heading>
-        <HStack>
+        <HStack justify="space-between" className="md:flex flex-wrap md:flex-nowrap">
           <Select
             w="220px"
             placeholder="All types"
