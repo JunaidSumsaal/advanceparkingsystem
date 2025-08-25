@@ -12,18 +12,6 @@ from .emailer import send_email_notification
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
-import json
-import requests
-from celery import shared_task
-from django.utils import timezone
-from django.db import transaction
-from django.contrib.auth import get_user_model
-from .models import Notification, PushSubscription
-from .utils import broadcast_ws_to_user, send_web_push
-from .emailer import send_email_notification
-
-User = get_user_model()
-
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=5)
 def send_notification_async(self, user_id, title, body, type_="general", extra=None):
