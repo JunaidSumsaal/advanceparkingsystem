@@ -2,7 +2,7 @@ import { Box, Button, VStack, Heading, Text } from "@chakra-ui/react";
 import { useNearbySpots } from "../../hooks/useNearbySpots";
 
 export default function NearbySpots() {
-  const { spots, loading, handleBook } = useNearbySpots();
+  const { spots, loading, handleBookSpot } = useNearbySpots();
 
   if (loading) return <Text>Loading nearby spots...</Text>;
 
@@ -15,7 +15,7 @@ export default function NearbySpots() {
             <Text><b>{spot.name}</b></Text>
             <Text>Available: {spot.is_available ? "Yes" : "No"}</Text>
             {spot.is_available && (
-              <Button mt={2} onClick={() => handleBook(spot.id)}>
+              <Button mt={2} onClick={() => handleBookSpot(spot.id)}>
                 Book Now
               </Button>
             )}
