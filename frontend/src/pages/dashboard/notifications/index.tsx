@@ -19,6 +19,7 @@ import {
 import Dash from "../../../components/loader/dashboard";
 import { useNotifications } from "../../../hooks/useNotifications";
 import { formatSnakeCaseToTitleCase } from "../../../utils/capitilizer";
+import { CircleQuestionMark } from "lucide-react";
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -153,7 +154,15 @@ export default function NotificationsPage() {
       </Text>
 
       {noNotifications && filter && (
-        <Box p={6} textAlign="center" color="gray.500">
+        <Box
+          p={6}
+          textAlign="center"
+          color="gray.500"
+          display={"flex"}
+          flexDirection={"column"}
+          justifyContent={"center"}
+        >
+          <CircleQuestionMark />
           No notifications available for {formatSnakeCaseToTitleCase(filter)}.
         </Box>
       )}
@@ -202,7 +211,6 @@ export default function NotificationsPage() {
         {!loading &&
           !hasMore &&
           items.length === 0 &&
-          !noNotifications &&
           !filter && (
             <Box p={6} textAlign="center" color="gray.500">
               No notifications found.

@@ -98,9 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       Cookies.set("refresh", newRefresh);
     } catch (err) {
       console.error("Error refreshing token", err);
-      logout();
     }
-  }, [logout]);
+  }, []);
 
   /** Fetch current user */
   const fetchUser = useCallback(async () => {
