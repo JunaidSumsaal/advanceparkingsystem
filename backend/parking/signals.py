@@ -8,7 +8,7 @@ from notifications.tasks import send_notification_async, booking_reminder_task
 from notifications.models import PushSubscription
 from notifications.utils import send_web_push
 from .utils import calculate_distance, send_websocket_update
-from .models import ParkingSpot, Booking, ParkingFacility
+from .models import ParkingSpot, Booking, ParkingFacility, SpotAvailabilityLog
 
 User = get_user_model()
 
@@ -141,3 +141,29 @@ def booking_notifications(sender, instance, created, **kwargs):
         eta = instance.start_time - timedelta(minutes=30)
         if eta > timezone.now():
             booking_reminder_task.apply_async(args=[instance.id], eta=eta)
+
+@receiver(pre_save, sender=ParkingSpot)
+def log_spot_status_change(sender, instance, **kwargs):
+    """
+    Whenever a spot changes availability, store a log entry.
+    """
+    if not instance.pk:
+        # new spot creation → log initial status
+        SpotAvailabilityLog.objects.create(
+            parking_spot=instance,
+            is_available=instance.is_available,
+            timestamp=timezone.now(),
+        )
+        return
+
+    try:
+        old_instance = ParkingSpot.objects.get(pk=instance.pk)
+    except ParkingSpot.DoesNotExist:
+        return
+
+    if old_instance.is_available != instance.is_available:
+        SpotAvailabilityLog.objects.create(
+            parking_spot=instance,
+            is_available=instance.is_available,
+            timestamp=timezone.now(),
+        )
