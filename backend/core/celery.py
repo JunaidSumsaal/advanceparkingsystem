@@ -12,6 +12,23 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
+    "dynamic-pricing-every-5min": {
+        "task": "parking.tasks.recalc_dynamic_prices",
+        "schedule": crontab(minute="*/5"),
+    },
+    "spot-predictions-every-10min": {
+        "task": "parking.tasks.run_spot_predictions",
+        "schedule": crontab(minute="*/10"),
+    },
+    "booking-expiry-reminders-every-minute": {
+        "task": "parking.tasks.send_booking_expiry_reminders",
+        "schedule": crontab(minute="*"),
+    },
+    "archive-report-daily": {
+        "task": "parking.tasks.generate_archive_report_task",
+        "schedule": crontab(hour=0, minute=5),
+        "args": ("daily",),
+    },
     "daily-archive-report": {
         "task": "parking.tasks.generate_archive_report_task",
         "schedule": crontab(hour=0, minute=0),
