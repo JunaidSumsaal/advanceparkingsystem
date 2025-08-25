@@ -16,12 +16,12 @@ export const useFacilities = () => {
     }
   }, []);
 
-  const handleArchive = async (id: number) => {
+  const handleArchive = async (id: any) => {
     await archiveFacility(id);
     fetchFacilities();
   };
 
-  const handleRestore = async (id: number) => {
+  const handleRestore = async (id: any) => {
     await restoreFacility(id);
     fetchFacilities();
   };

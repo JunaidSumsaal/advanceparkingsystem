@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react";
-import { useIsAuthenticated } from "../hooks/useIsAuthenticated";
 import { Navigate } from "react-router-dom";
 import Dash from "../components/loader/dashboard";
+import { useUserRole } from "../hooks/useUserRole";
 
 // Lazy load the components
 const Overview = lazy(() => import("../pages/dashboard/overview"));
@@ -17,18 +17,17 @@ const componentMap: Record<string, React.ComponentType> = {
 };
 
 export const DashboardSwitch = () => {
-  const { user, loading } = useIsAuthenticated();
+  const { role, loading } = useUserRole();
 
   if (loading) {
     return <Dash />;
   }
 
-  if (!user) {
+  if (!role) {
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = user.role?.toLowerCase();
-  const ComponentToRender = componentMap[userRole];
+  const ComponentToRender = componentMap[role];
 
   if (!ComponentToRender) {
     // fallback if role is not mapped
@@ -36,7 +35,7 @@ export const DashboardSwitch = () => {
       <div className="p-8 text-center">
         <h2 className="text-xl font-semibold">Unknown Role</h2>
         <p className="text-gray-500">
-          No dashboard available for role: <strong>{user.role}</strong>
+          No dashboard available for role: <strong>{role}</strong>
         </p>
       </div>
     );

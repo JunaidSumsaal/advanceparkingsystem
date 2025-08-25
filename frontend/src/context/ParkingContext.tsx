@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 import {
   getBookings,
   getBooking,
-  bookSpot,
+  createBooking,
   endBooking,
   getFacilities,
   getFacility,
@@ -52,7 +52,7 @@ export const ParkingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const makeBooking = useCallback(async (data: { spot: number; start_time: string; end_time: string }) => {
     try {
-      const res = await bookSpot(data);
+      const res = await createBooking(data);
       await fetchBookings();
       return res;
     } catch (err) {

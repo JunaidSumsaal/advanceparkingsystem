@@ -25,7 +25,7 @@ import { useState } from "react";
 import { FiHome } from "react-icons/fi";
 import Logo from "../../assets/header_logo.png";
 import { Link as RouterLink } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+import { useUserRole } from "../../hooks/useUserRole";
 interface SidebarProps extends BoxProps {
   onClose: () => void;
 }
@@ -86,7 +86,8 @@ const SidebarContent = ({
   activeLink: string;
   onLinkClick: (name: string) => void;
 }) => {
-  const { user } = useAuth();
+  const { role } = useUserRole();
+
 
 
   return (
@@ -118,7 +119,7 @@ const SidebarContent = ({
       </Flex>
 
       {LinkItems.filter(
-        (link) => !link.roles || link.roles.includes(user?.role.toLowerCase() ?? "")
+        (link) => !link.roles || link.roles.includes(role ?? "")
       ).map((link) => (
         <NavItem
           key={link.name}

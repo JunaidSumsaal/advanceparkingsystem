@@ -23,7 +23,7 @@ export const getSpotAvailabilityLogs = async (params?: any) => {
 };
 
 // Book Spot
-export const bookSpot = async (data: {
+export const createBooking = async (data: {
   spot: number;
   start_time: string;
   end_time: string;

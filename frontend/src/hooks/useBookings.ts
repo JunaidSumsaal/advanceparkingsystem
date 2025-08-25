@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
-import { getBookings, bookSpot, endBooking } from "../services/parkingServices";
+import { getBookings, createBooking, endBooking } from "../services/parkingServices";
 
 export const useBookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -17,7 +17,7 @@ export const useBookings = () => {
   }, []);
 
   const handleBookSpot = async (spot: number, start: string, end: string) => {
-    const data = await bookSpot({ spot, start_time: start, end_time: end });
+    const data = await createBooking({ spot, start_time: start, end_time: end });
     fetchBookings();
     return data;
   };

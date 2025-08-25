@@ -15,6 +15,8 @@ import Dash from "../../../components/loader/dashboard";
 import { useNearbySpots } from "../../../hooks/useNearbySpots"; // Use the custom hook
 
 // Fix Leaflet default icon
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
