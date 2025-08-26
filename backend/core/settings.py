@@ -16,7 +16,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default='ef365827fed3b2bbe05aa453f557098e48b9d713517721c6116df666b8e370f443b8214935766de02be228a499573085')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', 'advanceparkingsystem.onrender.com', 'advanceparkingsystem-backend.onrender.com'])
 
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
@@ -66,7 +66,8 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://advancepackingsystem.onrender.com",
+    "https://advanceparkingsystem.onrender.com",
+    "https://advanceparkingsystem-backend.onrender.com",
 ]
 
 
