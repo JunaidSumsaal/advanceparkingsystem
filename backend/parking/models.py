@@ -113,19 +113,31 @@ class ParkingSpot(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='provided_spots',
-        limit_choices_to={"role": "provider"}
+        limit_choices_to={"role": "provider"},
+        null=True,
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="created_spots"
+        related_name="created_spots",
+        null=True,
+        blank=True,
     )
     is_active = models.BooleanField(default=True)
     objects = ActiveSpotManager()
     active = ActiveManager()
     all_objects = models.Manager()
-
+    external_id = models.CharField(
+        max_length=100, unique=True, null=True, blank=True,
+        help_text="External OSM ID (osm-123456). Null if provider-created."
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=[("db", "Database"), ("osm", "OpenStreetMap")],
+        default="db"
+    )
     def soft_delete(self):
         self.is_active = False
         self.save(update_fields=["is_active"])
@@ -163,6 +175,8 @@ class ParkingSpot(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=['is_available']),
+            models.Index(fields=["latitude", "longitude"]),
+            models.Index(fields=["external_id"]),
         ]
 
 

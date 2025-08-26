@@ -79,10 +79,8 @@ def spot_archived_cancel(sender, instance, **kwargs):
             )
 
 # -------- Spot becomes available --------
-@receiver(pre_save, sender=ParkingSpot)
+@receiver(post_save, sender=ParkingSpot)
 def spot_availability_broadcast(sender, instance, **kwargs):
-    if not instance.pk:
-        return
     try:
         old = ParkingSpot.objects.get(pk=instance.pk)
     except ParkingSpot.DoesNotExist:
@@ -142,17 +140,16 @@ def booking_notifications(sender, instance, created, **kwargs):
         if eta > timezone.now():
             booking_reminder_task.apply_async(args=[instance.id], eta=eta)
 
-@receiver(pre_save, sender=ParkingSpot)
-def log_spot_status_change(sender, instance, **kwargs):
+@receiver(post_save, sender=ParkingSpot)
+def log_spot_status_change(sender, instance, created, **kwargs):
     """
-    Whenever a spot changes availability, store a log entry.
+    Whenever a spot is created or its availability changes, log a status entry.
     """
-    if not instance.pk:
-        # new spot creation → log initial status
+    if created:
+        # log initial status
         SpotAvailabilityLog.objects.create(
             parking_spot=instance,
             is_available=instance.is_available,
-            timestamp=timezone.now(),
         )
         return
 
@@ -165,5 +162,4 @@ def log_spot_status_change(sender, instance, **kwargs):
         SpotAvailabilityLog.objects.create(
             parking_spot=instance,
             is_available=instance.is_available,
-            timestamp=timezone.now(),
         )

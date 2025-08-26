@@ -1,4 +1,5 @@
 import math
+import requests
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action, api_view, permission_classes
@@ -19,6 +20,8 @@ from core.metrics import (
     BOOKING_CREATED, BOOKING_ENDED, ACTIVE_AVAILABLE_SPOTS, SPOT_SELECTED
 )
 from .pricing import update_dynamic_prices
+
+OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
 
 def update_available_spots_metric():
@@ -196,18 +199,9 @@ class NearbyParkingSpotsView(APIView):
     def get(self, request):
         lat = request.query_params.get("lat")
         lng = request.query_params.get("lng")
-        radius_km = float(
-            request.query_params.get("radius", getattr(
-                request.user, "default_radius_km", 2))
-        )
+        radius_km = float(request.query_params.get("radius", 2))  # default 2km
 
         if not lat or not lng:
-            log_action(
-                request.user,
-                "nearby_spots_error",
-                "Latitude and longitude not provided",
-                request,
-            )
             return Response({"error": "Latitude and longitude are required."}, status=400)
 
         try:
@@ -216,64 +210,125 @@ class NearbyParkingSpotsView(APIView):
         except ValueError:
             return Response({"error": "Invalid coordinates."}, status=400)
 
-        # all available spots
+        # Step 1: check DB spots
         spots = ParkingSpot.objects.filter(is_available=True)
-        if not spots.exists():
-            log_action(request.user, "nearby_spots_empty",
-                       "No available spots in system", request)
-            return Response(
-                {
-                    "message": "No available spots in the system.",
-                    "total_available": 0,
-                    "within_radius": 0,
-                    "results": [],
-                },
-                status=204,
-            )
-
-        # filter by radius
         nearby_spots = [
-            spot
-            for spot in spots
-            if calculate_distance(lat, lng, float(spot.latitude), float(spot.longitude))
-            <= radius_km
+            spot for spot in spots
+            if calculate_distance(lat, lng, float(spot.latitude), float(spot.longitude)) <= radius_km
         ]
 
-        if not nearby_spots:
-            log_action(
-                request.user,
-                "nearby_spots_empty_radius",
-                f"No spots found within {radius_km} km",
-                request,
+        if nearby_spots:
+            serializer = ParkingSpotSerializer(nearby_spots, many=True)
+            send_notification_async.delay(
+                request.user.id,
+                "Nearby Parking Found 🚗",
+                f"{len(nearby_spots)} parking spots available within {radius_km} km."
             )
-            return Response(
-                {
-                    "message": f"No available spots found within {radius_km} km.",
-                    "total_available": spots.count(),
-                    "within_radius": 0,
-                    "results": [],
-                },
-                status=200,
-            )
-
-        serializer = ParkingSpotSerializer(nearby_spots, many=True)
-        log_action(
-            request.user,
-            "nearby_spots_viewed",
-            f"User viewed {len(nearby_spots)} spots within {radius_km} km",
-            request,
-        )
-        update_available_spots_metric()
-
-        return Response(
-            {
-                "message": f"{len(nearby_spots)} spots found within {radius_km} km.",
-                "total_available": spots.count(),
-                "within_radius": len(nearby_spots),
+            return Response({
+                "source": "database",
                 "results": serializer.data,
-            },
-            status=200,
+                "within_radius": len(nearby_spots),
+                "radius": radius_km
+            })
+
+        # Step 2: query Overpass API
+        results = self.query_overpass(lat, lng, radius_km)
+
+        if results:
+            cached_spots = self.cache_osm_spots(results)
+            serializer = ParkingSpotSerializer(cached_spots, many=True)
+
+            send_notification_async.delay(
+                request.user.id,
+                "Nearby Parking Found 🚗",
+                f"{len(cached_spots)} new parking spots found from OpenStreetMap within {radius_km} km."
+            )
+            return Response({
+                "source": "osm",
+                "results": serializer.data,
+                "within_radius": len(cached_spots),
+                "radius": radius_km
+            })
+
+        # Step 3: Expand search up to 20km (cap at 500km)
+        if radius_km < 20:
+            new_radius = min(radius_km * 10, 500)
+            return self._retry_with_expanded_radius(request, lat, lng, new_radius)
+
+        # Step 4: No results
+        send_notification_async.delay(
+            request.user.id,
+            "No Parking Nearby ❌",
+            f"No available parking spots within {radius_km} km."
         )
+        return Response({
+            "message": f"No parking found within {radius_km} km.",
+            "results": []
+        }, status=200)
+
+    def query_overpass(self, lat, lng, radius_km):
+        query = f"""
+        [out:json][timeout:25];
+        (
+          node["amenity"="parking"](around:{radius_km * 1000},{lat},{lng});
+          way["amenity"="parking"](around:{radius_km * 1000},{lat},{lng});
+          relation["amenity"="parking"](around:{radius_km * 1000},{lat},{lng});
+        );
+        out center;
+        """
+        response = requests.get(OVERPASS_URL, params={"data": query})
+        if response.status_code == 200:
+            return response.json().get("elements", [])
+        return []
+
+    def cache_osm_spots(self, osm_data):
+        """Cache OSM spots into DB if not already saved"""
+        cached_spots = []
+        for el in osm_data:
+            osm_id = f"osm-{el['id']}"
+            lat = el.get("lat") or el.get("center", {}).get("lat")
+            lng = el.get("lon") or el.get("center", {}).get("lon")
+
+            if not lat or not lng:
+                continue
+
+            spot, created = ParkingSpot.objects.update_or_create(
+                external_id=osm_id,
+                defaults={
+                    "name": el.get("tags", {}).get("name", "Parking"),
+                    "latitude": lat,
+                    "longitude": lng,
+                    "is_available": True,
+                    "provider": None,
+                    "facility": None,
+                    "source": "osm",
+                },
+            )
+            cached_spots.append(spot)
+        return cached_spots
+
+
+    def _retry_with_expanded_radius(self, request, lat, lng, radius_km):
+        results = self.query_overpass(lat, lng, radius_km)
+        if results:
+            cached_spots = self.cache_osm_spots(results)
+            serializer = ParkingSpotSerializer(cached_spots, many=True)
+            send_notification_async.delay(
+                request.user.id,
+                "Parking Spots Found 🚗",
+                f"{len(cached_spots)} parking spots found within {radius_km} km."
+            )
+            return Response({
+                "source": "osm-expanded",
+                "results": serializer.data,
+                "within_radius": len(cached_spots),
+                "radius": radius_km
+            })
+        return Response({
+            "message": f"No parking found within {radius_km} km.",
+            "results": []
+        }, status=200)
+
 
 
 class NearbyPredictionsView(APIView):
