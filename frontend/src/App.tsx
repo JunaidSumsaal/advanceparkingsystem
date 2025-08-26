@@ -5,15 +5,14 @@ import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { UserProvider } from "./context/UsersContext";
 import { DashboardProvider } from "./context/DashboardContext";
-import { ParkingProvider } from "./context/ParkingContext";
 
 const Providers = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>
-    <UserProvider>
       <DashboardProvider>
-        <ParkingProvider>{children}</ParkingProvider>
+        <UserProvider>
+          {children}
+        </UserProvider>
       </DashboardProvider>
-    </UserProvider>
   </AuthProvider>
 );
 

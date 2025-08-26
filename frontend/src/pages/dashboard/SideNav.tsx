@@ -74,7 +74,7 @@ const LinkItems: Array<{
   { name: "Users",
     icon: User,
     path: "/dashboard/users",
-    roles: ["admin"]
+    roles: ["admin", "provider"]
   },
 ];
 
