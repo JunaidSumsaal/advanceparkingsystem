@@ -3,6 +3,11 @@ export const API =
     ? import.meta.env.VITE_API_URL || '/api'
     : "https://advancepackingsystem-backend.onrender.com/api";
 ;
+export const wsUrl =
+  import.meta.env.MODE === "development"
+    ? import.meta.env.VITE_WS_URL || 'wss://https://localhost:8000/ws/notifications/'
+    : "wss://advancepackingsystem-backend.onrender.com/ws/notifications/";
+;
 export const SECURE = import.meta.env.VITE_API_SECURE || false;
 
 // Core API prefixes
@@ -36,10 +41,7 @@ export const PARK_REVIEW = `/review`;
 
 // Notification sub-routes
 export const NOTIF_LIST = `/notifications`;
-export const NOTIF_HISTORY = `/history`;
-export const NOTIF_EMAIL_PREF = `/email-preference`;
-export const NOTIF_UNSUBSCRIBE = `/unsubscribe`;
-export const NOTIF_PUSH = `/push-subscriptions`;
+export const NOTIF_SUBSCRIBTION = `/subscriptions`;
 
 // Newsletter
 export const NEWSLETTER = `/newsletter`;

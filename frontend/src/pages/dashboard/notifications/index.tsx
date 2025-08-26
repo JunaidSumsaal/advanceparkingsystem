@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Box,
   Heading,
@@ -9,76 +7,29 @@ import {
   Button,
   Badge,
   Select,
-  useToast,
 } from "@chakra-ui/react";
-import { useEffect, useRef, useState, useCallback } from "react";
-import {
-  getNotifications,
-  markAllNotificationsRead,
-} from "../../../services/notificationServices";
 import Dash from "../../../components/loader/dashboard";
 import { useNotifications } from "../../../hooks/useNotifications";
 import { formatSnakeCaseToTitleCase } from "../../../utils/capitilizer";
 import { CircleQuestionMark } from "lucide-react";
+import { useEffect } from "react";
 
 export default function NotificationsPage() {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [_page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [filter, setFilter] = useState<string>("");
-  const [total, setTotal] = useState<number>(0);
-  const [noNotifications, setNoNotifications] = useState<boolean>(false); // New state
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const toast = useToast();
-  const { handleToggleReadStatus } = useNotifications();
-
-  const loadPage = useCallback(
-    async (pageToLoad: number, filterType?: string, replace = false) => {
-      setLoading(true);
-      try {
-        const data = await getNotifications(pageToLoad, filterType);
-        setTotal(data.count);
-        setHasMore(Boolean(data.next));
-
-        if (data.count === 0) {
-          setNoNotifications(true);
-        } else {
-          setNoNotifications(false);
-        }
-
-        setItems((prev) => {
-          if (replace) return data.results;
-          const existing = new Set(prev.map((i) => i.id));
-          const merged = [...prev];
-          for (const it of data.results) {
-            if (!existing.has(it.id)) merged.push(it);
-          }
-          return merged;
-        });
-      } catch (e) {
-        console.error(e);
-        toast({
-          title: "Failed to load notifications",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [toast]
-  );
-
-  useEffect(() => {
-    setPage(1);
-    setItems([]);
-    setHasMore(true);
-    setNoNotifications(false);
-    loadPage(1, filter, true);
-  }, [filter, loadPage]);
+  const {
+    handleToggleReadStatus,
+    sentinelRef,
+    loading,
+    hasMore,
+    total,
+    notifications,
+    handleMarkAllRead,
+    filter,
+    setFilter,
+    noNotifications,
+    notificationTypes,
+    setPage,
+    loadPage,
+  } = useNotifications();
 
   useEffect(() => {
     if (!sentinelRef.current) return;
@@ -100,49 +51,32 @@ export default function NotificationsPage() {
 
     obs.observe(el);
     return () => obs.unobserve(el);
-  }, [loading, hasMore, filter, loadPage]);
-
-  const markAllRead = async () => {
-    try {
-      await markAllNotificationsRead();
-      setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      toast({
-        title: "All notifications marked as read",
-        status: "success",
-        position: "top",
-        duration: 3000,
-      });
-    } catch {
-      toast({
-        title: "Failed to mark all read",
-        status: "error",
-        position: "top",
-        duration: 3000,
-      });
-    }
-  };
-
+  }, [loading, hasMore, filter, loadPage, sentinelRef, setPage]);
   return (
     <Box p={6}>
-      <HStack justify="space-between" mb={4} align="center" flexWrap={'wrap'}>
+      <HStack justify="space-between" mb={4} align="center" flexWrap={"wrap"}>
         <Heading size="lg">Notifications</Heading>
-        <HStack justify="space-between" className="md:flex flex-wrap md:flex-nowrap">
+        <HStack
+          justify="space-between"
+          className="md:flex flex-wrap md:flex-nowrap"
+        >
           <Select
             w="220px"
             placeholder="All types"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="spot_available">Spot Available</option>
-            <option value="booking_reminder">Booking Reminder</option>
-            <option value="booking_created">Booking Created</option>
-            <option value="general">General</option>
+            {notificationTypes.map((type) => (
+              <option key={type} value={type}>
+                {formatSnakeCaseToTitleCase(type)}
+              </option>
+            ))}
           </Select>
           <Button
             size="sm"
             bg="primary.400"
             color={"white"}
-            onClick={markAllRead}
+            onClick={handleMarkAllRead}
           >
             Mark all as read
           </Button>
@@ -150,7 +84,7 @@ export default function NotificationsPage() {
       </HStack>
 
       <Text mb={2} color="gray.600">
-        Showing {items.length} of {total}
+        Showing {notifications.length} of {total}
       </Text>
 
       {noNotifications && filter && (
@@ -168,13 +102,15 @@ export default function NotificationsPage() {
       )}
 
       <VStack align="stretch" spacing={3}>
-        {items.map((n) => (
+        {notifications.map((n) => (
           <Box
             as="button"
             key={n.id}
             p={4}
             borderWidth="1px"
             borderRadius="lg"
+            borderLeft={n.is_read ? "none" : "4px"}
+            borderLeftColor={n.is_read ? "gray.50" : "blue.200"}
             bg={n.is_read ? "gray.50" : "blue.50"}
             onClick={() => handleToggleReadStatus(n.id, n.is_read)}
             _hover={{ bg: "secondary.50" }}
@@ -208,14 +144,11 @@ export default function NotificationsPage() {
 
         {loading && <Dash />}
 
-        {!loading &&
-          !hasMore &&
-          items.length === 0 &&
-          !filter && (
-            <Box p={6} textAlign="center" color="gray.500">
-              No notifications found.
-            </Box>
-          )}
+        {!loading && !hasMore && noNotifications && !filter && (
+          <Box p={6} textAlign="center" color="gray.500">
+            No notifications found.
+          </Box>
+        )}
       </VStack>
     </Box>
   );

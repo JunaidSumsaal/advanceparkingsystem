@@ -84,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     setLoading(false);
     setError(null);
+    window.location.href = '/login';
   }, []);
 
   /** Refresh token */
@@ -98,8 +99,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       Cookies.set("refresh", newRefresh);
     } catch (err) {
       console.error("Error refreshing token", err);
+      logout();
     }
-  }, []);
+  }, [logout]);
 
   /** Fetch current user */
   const fetchUser = useCallback(async () => {

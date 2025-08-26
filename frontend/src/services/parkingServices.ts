@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import apiHelper from "../utils/apiHelper";
+import Cookies from "js-cookie";
 import {
   PARK_AVAILABILITY_LOGS,
   PARK_BOOKINGS,
@@ -13,6 +14,7 @@ import {
   PARK_REVIEW,
   PARKING,
 } from "./constants";
+import api from "./api";
 
 // --- Availability Logs ---
 export const getSpotAvailabilityLogs = async (params?: any) => {
@@ -47,18 +49,16 @@ export const getFacilities = async (params?: any) => {
 };
 
 export const archiveFacility = async (ids: number[]) => {
-  const res = await apiHelper.post(
-    `${PARKING}${PARK_FACILITIES}/archive/`,
-    { ids }
-  );
+  const res = await apiHelper.post(`${PARKING}${PARK_FACILITIES}/archive/`, {
+    ids,
+  });
   return res;
 };
 
 export const restoreFacility = async (ids: number[]) => {
-  const res = await apiHelper.post(
-    `${PARKING}${PARK_FACILITIES}/restore/`,
-    { ids }
-  );
+  const res = await apiHelper.post(`${PARKING}${PARK_FACILITIES}/restore/`, {
+    ids,
+  });
   return res;
 };
 
@@ -107,20 +107,31 @@ export const deleteSpot = async (id: number) => {
 export const getNearbySpots = async ({
   lat,
   lng,
-  radius = 2,
-  limit = 20,
+  radius = 200,
+  limit = 60,
   offset = 0,
 }: {
-   lat: number; lng: number;
-  radius: number,
-  limit: number,
-  offset: number,
+  lat: number;
+  lng: number;
+  radius: number;
+  limit: number;
+  offset: number;
 }) => {
+  if (!Cookies.get("token")) {
+    // Guest user → call open API
+    const res = await api.get(`${PARKING}${PARK_NEARBY}/`, {
+      params: { lat, lng, radius, limit, offset },
+    });
+    return res.data;
+  }
+
+  // Authenticated user
   const res = await apiHelper.get(`${PARKING}${PARK_NEARBY}/`, {
     params: { lat, lng, radius, limit, offset },
   });
-  return res; // { message, total_available, within_radius, results }
+  return res;
 };
+
 export const navigateToSpot = async (spotId: number) => {
   const res = await apiHelper.get(`${PARKING}${PARK_NAVIGATE}/${spotId}/`);
   return res;
@@ -138,7 +149,9 @@ export const updateDynamicPricing = async () => {
 };
 
 export const getSpotPriceLogs = async (params?: any) => {
-  const res = await apiHelper.get(`${PARKING}${PARK_PRICING_LOGS}/`, { params });
+  const res = await apiHelper.get(`${PARKING}${PARK_PRICING_LOGS}/`, {
+    params,
+  });
   return res;
 };
 

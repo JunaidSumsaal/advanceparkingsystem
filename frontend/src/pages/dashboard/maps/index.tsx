@@ -96,8 +96,8 @@ const Maps = () => {
           const data = await getNearbySpots({
             lat: position[0],
             lng: position[1],
-            radius: 2,
-            limit: 20,
+            radius: 200,
+            limit: 60,
             offset: 0,
           });
           const fetched = data.results || data;
