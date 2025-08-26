@@ -20,18 +20,6 @@ def welcome_user_notification(sender, instance, created, **kwargs):
             type_="welcome",
         )
 
-        # Suggest 2–3 random available spots
-        spots = list(ParkingSpot.objects.filter(is_available=True)[:10])
-        if spots:
-            sample_spots = random.sample(spots, min(len(spots), 3))
-            for spot in sample_spots:
-                send_notification_async.delay(
-                    instance.id,
-                    title="🚗 Spot Available Near You",
-                    body=f"Spot '{spot.name}' is currently available. Book now before it’s gone!",
-                    type_="spot_available",
-                )  
-
 
 @receiver(post_save, sender=User)
 def password_change_notification(sender, instance, **kwargs):

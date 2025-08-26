@@ -199,7 +199,7 @@ class NearbyParkingSpotsView(APIView):
     def get(self, request):
         lat = request.query_params.get("lat")
         lng = request.query_params.get("lng")
-        radius_km = float(request.query_params.get("radius", 2))  # default 2km
+        radius_km = float(request.query_params.get("radius", 200))
 
         if not lat or not lng:
             return Response({"error": "Latitude and longitude are required."}, status=400)
@@ -233,6 +233,7 @@ class NearbyParkingSpotsView(APIView):
 
         # Step 2: query Overpass API
         results = self.query_overpass(lat, lng, radius_km)
+        print(results)
 
         if results:
             cached_spots = self.cache_osm_spots(results)
@@ -250,8 +251,8 @@ class NearbyParkingSpotsView(APIView):
                 "radius": radius_km
             })
 
-        # Step 3: Expand search up to 20km (cap at 500km)
-        if radius_km < 20:
+        # Step 3: Expand search up to 200km (cap at 500km)
+        if radius_km < 200:
             new_radius = min(radius_km * 10, 500)
             return self._retry_with_expanded_radius(request, lat, lng, new_radius)
 
