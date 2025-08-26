@@ -101,6 +101,7 @@ const Maps = () => {
             offset: 0,
           });
           const fetched = data.results || data;
+          console.log(fetched)
           setSpots(fetched);
           if (!fetched || fetched.length === 0) {
             toast({

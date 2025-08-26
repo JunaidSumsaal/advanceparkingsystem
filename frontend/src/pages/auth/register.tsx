@@ -17,7 +17,6 @@ import {
   useToast,
   Image,
   Link as ChakraLink,
-  Select,
 } from "@chakra-ui/react";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { Link, useNavigate } from "react-router-dom";
@@ -35,7 +34,7 @@ export default function Register() {
   const [userData, setUserData] = useState({
     username: "",
     email: "",
-    role: "driver", // Set an initial value for role
+    role: "driver",
     password: "",
     password_confirm: "",
   });
@@ -76,7 +75,7 @@ export default function Register() {
         username: userData.username,
         email: userData.email,
         password: userData.password,
-        role: userData.role, // Pass the role to the registration function
+        role: userData.role,
       });
       toast({
         title: "Registration successful!",
@@ -165,7 +164,7 @@ export default function Register() {
               </FormControl>
 
               {/* Corrected Select Component */}
-              <FormControl id="role" isRequired>
+              {/* <FormControl id="role" isRequired>
                 <FormLabel>I am a:</FormLabel>
                 <Select
                   w="100%"
@@ -176,7 +175,7 @@ export default function Register() {
                   <option value="driver">Driver</option>
                   <option value="provider">Provider</option>
                 </Select>
-              </FormControl>
+              </FormControl> */}
 
               <FormControl id="password" isRequired>
                 <FormLabel>Password</FormLabel>
