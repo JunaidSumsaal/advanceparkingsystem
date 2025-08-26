@@ -37,6 +37,8 @@ import L from "leaflet";
 import Dash from "../../../components/loader/dashboard";
 
 // Fix Leaflet default icon
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -94,6 +96,9 @@ const Maps = () => {
           const data = await getNearbySpots({
             lat: position[0],
             lng: position[1],
+            radius: 2,
+            limit: 20,
+            offset: 0,
           });
           const fetched = data.results || data;
           setSpots(fetched);
