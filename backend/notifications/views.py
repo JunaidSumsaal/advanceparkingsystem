@@ -17,12 +17,16 @@ class NotificationPagination(PageNumberPagination):
     max_page_size = 100
 
 # Notification types
+
+
 class NotificationTypesView(views.APIView):
     def get(self, request):
         types = Notification.objects.values_list('type', flat=True).distinct()
         return Response(types)
 
 # Notifications
+
+
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]

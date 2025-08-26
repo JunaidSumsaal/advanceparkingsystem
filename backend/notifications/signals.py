@@ -19,7 +19,7 @@ def spot_available_signal(sender, instance, **kwargs):
     if not old_instance.is_available and instance.is_available:
         # provider-owned spot
         if instance.provider_id:
-            # 🔹 Notify provider
+            # Notify provider
             provider_notif = Notification.objects.create(
                 user_id=instance.provider_id,
                 title="Parking Spot Available! 🚗",
@@ -34,7 +34,7 @@ def spot_available_signal(sender, instance, **kwargs):
             )
             broadcast_ws_to_user(instance.provider_id, provider_notif)
 
-            # 🔹 Notify nearby users within 10 km
+            # Notify nearby users within 10 km
             spot_coords = (instance.latitude, instance.longitude)
             for user in User.objects.exclude(latitude=None).exclude(longitude=None):
                 is_near, dist = within_radius(
@@ -59,7 +59,7 @@ def spot_available_signal(sender, instance, **kwargs):
                     broadcast_ws_to_user(user.id, notif)
 
         else:
-            # 🔹 Public notification
+            # Public notification
             public_notif = Notification.objects.create(
                 title="Public Spot Available 🚙",
                 body=f"{instance.name} is now free.",

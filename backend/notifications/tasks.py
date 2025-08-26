@@ -114,7 +114,7 @@ def send_pending_notifications(batch_size=50):
         delivered=False, status="pending")[:batch_size]
 
     for n in pending:
-        # 🔹 Public notifications (broadcast within 10km)
+        # Public notifications (broadcast within 10km)
         if n.is_public:
             lat = getattr(n, "extra", {}).get("lat")
             lng = getattr(n, "extra", {}).get("lng")
@@ -128,7 +128,7 @@ def send_pending_notifications(batch_size=50):
 
             users = User.objects.exclude(latitude=None).exclude(longitude=None)
         else:
-            # 🔹 Private notification → just the target user
+            # Private notification → just the target user
             users = [n.user] if n.user else []
 
         for user in users:
@@ -136,7 +136,7 @@ def send_pending_notifications(batch_size=50):
             if not subs.exists():
                 continue
 
-            # 🔹 Distance filter only for public notifications
+            # Distance filter only for public notifications
             send_to_user = True
             distance = None
             if n.is_public and user.latitude and user.longitude:

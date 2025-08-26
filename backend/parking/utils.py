@@ -9,6 +9,7 @@ from notifications.utils import send_web_push
 
 logger = logging.getLogger(__name__)
 
+
 def send_websocket_update(spot):
     channel_layer = get_channel_layer()
     payload = {
@@ -24,21 +25,26 @@ def send_websocket_update(spot):
         "parking_updates",
         {"type": "parking_update", "data": payload},
     )
-    logger.info("Queued WS update for spot=%s latency=%.4fs", spot.id, time.time() - t0)
+    logger.info("Queued WS update for spot=%s latency=%.4fs",
+                spot.id, time.time() - t0)
+
 
 def notify_spot_available_push(spot):
     # light, best-effort broadcast to all push subscribers (you can filter later)
     for sub in PushSubscription.objects.all():
         send_web_push(sub, "🚗 Spot Available", f"{spot.name} is now free")
 
+
 def calculate_distance(lat1, lon1, lat2, lon2):
     # Proper Haversine distance (km)
     R = 6371.0
     dlat = radians(lat2 - lat1)
     dlon = radians(lon2 - lon1)
-    a = sin(dlat/2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2) ** 2
+    a = sin(dlat/2) ** 2 + cos(radians(lat1)) * \
+        cos(radians(lat2)) * sin(dlon/2) ** 2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
+
 
 def notify_spot_available(spot):
     for sub in PushSubscription.objects.all():
