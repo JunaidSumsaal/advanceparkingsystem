@@ -51,7 +51,7 @@ const LinkItems: Array<{
     name: "Bookings",
     icon: BookCheckIcon,
     path: "/dashboard/booking",
-    roles: ["admin", "provider", "attendant", "driver"],
+    roles: ["admin"],
   },
   {
     name: "Maps",
@@ -74,7 +74,7 @@ const LinkItems: Array<{
   { name: "Users",
     icon: User,
     path: "/dashboard/users",
-    roles: ["admin", "provider"]
+    roles: ["admin"]
   },
 ];
 
