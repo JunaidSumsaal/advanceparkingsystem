@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from math import radians
 from accounts.utils import IsProviderOrAdmin, IsAdminOrSuperuser, IsAdminOrFacilityProvider, log_action
+from notifications.models import Notification
 from notifications.tasks import send_notification_async
 from parking.utils import calculate_distance
 from .models import ArchiveReport, ParkingFacility, ParkingSpot, Booking, SpotAvailabilityLog, SpotPredictionLog, SpotPriceLog
@@ -194,7 +195,7 @@ class ParkingSpotViewSet(viewsets.ModelViewSet):
 
 
 class NearbyParkingSpotsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         lat = request.query_params.get("lat")
@@ -219,11 +220,19 @@ class NearbyParkingSpotsView(APIView):
 
         if nearby_spots:
             serializer = ParkingSpotSerializer(nearby_spots, many=True)
-            send_notification_async.delay(
-                request.user.id,
-                "Nearby Parking Found 🚗",
-                f"{len(nearby_spots)} parking spots available within {radius_km} km."
-            )
+            if request.user.is_authenticated:
+                send_notification_async.delay(
+                    request.user.id,
+                    "Nearby Parking Found 🚗",
+                    f"{len(nearby_spots)} parking spots found within {radius_km} km."
+                )
+            else:
+                Notification.objects.create(
+                    user=None,
+                    title="Nearby Parking Found 🚗",
+                    body=f"{len(nearby_spots)} public parking spots found within {radius_km} km.",
+                    type="public"
+                )
             return Response({
                 "source": "database",
                 "results": serializer.data,
@@ -233,17 +242,25 @@ class NearbyParkingSpotsView(APIView):
 
         # Step 2: query Overpass API
         results = self.query_overpass(lat, lng, radius_km)
-        print(results)
 
         if results:
             cached_spots = self.cache_osm_spots(results)
             serializer = ParkingSpotSerializer(cached_spots, many=True)
 
-            send_notification_async.delay(
-                request.user.id,
-                "Nearby Parking Found 🚗",
-                f"{len(cached_spots)} new parking spots found from OpenStreetMap within {radius_km} km."
-            )
+            if request.user.is_authenticated:
+                send_notification_async.delay(
+                    request.user.id,
+                    "Nearby Parking Found 🚗",
+                    f"{len(cached_spots)} new parking spots found within {radius_km} km."
+                )
+            else:
+                Notification.objects.create(
+                    user=None,
+                    title="Nearby Parking Found 🚗",
+                    body=f"{len(cached_spots)} new public parking spots found within {radius_km} km.",
+                    type="public"
+                )
+
             return Response({
                 "source": "osm",
                 "results": serializer.data,
@@ -257,83 +274,28 @@ class NearbyParkingSpotsView(APIView):
             return self._retry_with_expanded_radius(request, lat, lng, new_radius)
 
         # Step 4: No results
-        send_notification_async.delay(
-            request.user.id,
-            "No Parking Nearby ❌",
-            f"No available parking spots within {radius_km} km."
-        )
-        return Response({
-            "message": f"No parking found within {radius_km} km.",
-            "results": []
-        }, status=200)
-
-    def query_overpass(self, lat, lng, radius_km):
-        query = f"""
-        [out:json][timeout:25];
-        (
-          node["amenity"="parking"](around:{radius_km * 1000},{lat},{lng});
-          way["amenity"="parking"](around:{radius_km * 1000},{lat},{lng});
-          relation["amenity"="parking"](around:{radius_km * 1000},{lat},{lng});
-        );
-        out center;
-        """
-        response = requests.get(OVERPASS_URL, params={"data": query})
-        if response.status_code == 200:
-            return response.json().get("elements", [])
-        return []
-
-    def cache_osm_spots(self, osm_data):
-        """Cache OSM spots into DB if not already saved"""
-        cached_spots = []
-        for el in osm_data:
-            osm_id = f"osm-{el['id']}"
-            lat = el.get("lat") or el.get("center", {}).get("lat")
-            lng = el.get("lon") or el.get("center", {}).get("lon")
-
-            if not lat or not lng:
-                continue
-
-            spot, created = ParkingSpot.objects.update_or_create(
-                external_id=osm_id,
-                defaults={
-                    "name": el.get("tags", {}).get("name", "Parking"),
-                    "latitude": lat,
-                    "longitude": lng,
-                    "is_available": True,
-                    "provider": None,
-                    "facility": None,
-                    "source": "osm",
-                },
-            )
-            cached_spots.append(spot)
-        return cached_spots
-
-
-    def _retry_with_expanded_radius(self, request, lat, lng, radius_km):
-        results = self.query_overpass(lat, lng, radius_km)
-        if results:
-            cached_spots = self.cache_osm_spots(results)
-            serializer = ParkingSpotSerializer(cached_spots, many=True)
+        if request.user.is_authenticated:
             send_notification_async.delay(
                 request.user.id,
-                "Parking Spots Found 🚗",
-                f"{len(cached_spots)} parking spots found within {radius_km} km."
+                "No Parking Nearby ❌",
+                f"No available parking spots within {radius_km} km."
             )
-            return Response({
-                "source": "osm-expanded",
-                "results": serializer.data,
-                "within_radius": len(cached_spots),
-                "radius": radius_km
-            })
+        else:
+            Notification.objects.create(
+                user=None,
+                title="No Parking Nearby ❌",
+                body=f"No public parking spots within {radius_km} km.",
+                type="public"
+            )
+
         return Response({
             "message": f"No parking found within {radius_km} km.",
             "results": []
         }, status=200)
-
 
 
 class NearbyPredictionsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         PREDICTION_REQUESTS.inc()

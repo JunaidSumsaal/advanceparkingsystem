@@ -14,22 +14,33 @@ env = environ.Env(
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = env('SECRET_KEY', default='ef365827fed3b2bbe05aa453f557098e48b9d713517721c6116df666b8e370f443b8214935766de02be228a499573085')
+SECRET_KEY = env(
+    'SECRET_KEY', default='ef365827fed3b2bbe05aa453f557098e48b9d713517721c6116df666b8e370f443b8214935766de02be228a499573085')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', 'advanceparkingsystem.onrender.com', 'advanceparkingsystem-backend.onrender.com'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+                         'localhost', 'advanceparkingsystem.onrender.com', 'advanceparkingsystem-backend.onrender.com'])
 
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+if DEBUG:
+    CELERY_BROKER_URL = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL",
+                        default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND",
+                            default="redis://localhost:6379/0")
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_TIME_LIMIT = 30
 CELERY_TASK_SOFT_TIME_LIMIT = 20
-CELERY_ACCEPT_CONTENT = json.loads(env("CELERY_ACCEPT_CONTENT", default='["json"]'))
+CELERY_ACCEPT_CONTENT = json.loads(
+    env("CELERY_ACCEPT_CONTENT", default='["json"]'))
 CELERY_RESULT_SERIALIZER = env("CELERY_RESULT_SERIALIZER", default="json")
 CELERY_TASK_SERIALIZER = env("CELERY_TASK_SERIALIZER", default="json")
 
 APPEND_SLASH = False
-VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='95d05a8c43ad9b3d9f079995211fac2f188bfa7b')
-VAPID_CLAIM_SUB = env('VAPID_CLAIM_SUB', default='mailto:advanceparkingsystem@gmail.com')
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY',
+                        default='95d05a8c43ad9b3d9f079995211fac2f188bfa7b')
+VAPID_CLAIM_SUB = env(
+    'VAPID_CLAIM_SUB', default='mailto:advanceparkingsystem@gmail.com')
 
 
 INSTALLED_APPS = [
@@ -97,7 +108,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     "default": env.db(
-        "DATABASE_URL", 
+        "DATABASE_URL",
         default="postgres://username:password@localhost:5432/advanceparkingsystem"
     )
 }
@@ -107,8 +118,6 @@ DATABASES = {
 #     DATABASES = {
 #         "default": env.db("SQLITE_URL", default="sqlite:///db.sqlite3")
 #     }
-
-
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -149,7 +158,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10, 
+    "PAGE_SIZE": 10,
 }
 
 SIMPLE_JWT = {
@@ -163,8 +172,24 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {"hosts": [env("REDIS_URL", default="redis://localhost:6379/0")]},
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 100},
+        }
     },
 }
+
+if DEBUG:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": "redis://localhost:6379/0",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "CONNECTION_POOL_KWARGS": {"max_connections": 100},
+            }
+        },
+    }
 
 CELERY_BEAT_SCHEDULE = {
     "send-notifications-every-minute": {

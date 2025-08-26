@@ -1,8 +1,10 @@
 from django.db import models
 from django.conf import settings
 
+
 class PushSubscription(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
     endpoint = models.TextField()
     p256dh = models.CharField(max_length=255)
     auth = models.CharField(max_length=255)
@@ -20,22 +22,30 @@ class Notification(models.Model):
         ("general", "General"),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
     title = models.CharField(max_length=255)
     body = models.TextField()
-    type = models.CharField(max_length=50, default="general", choices=NOTIFICATION_TYPES)
+    type = models.CharField(
+        max_length=50, default="general", choices=NOTIFICATION_TYPES)
     sent_at = models.DateTimeField(auto_now_add=True)
     delivered = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default="pending")
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
+    is_public = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.title} -> {self.user.username}"
 
 
 class NotificationPreference(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     push_enabled = models.BooleanField(default=True)
     email_enabled = models.BooleanField(default=True)
     newsletter_enabled = models.BooleanField(default=True)
@@ -53,7 +63,8 @@ class NotificationTemplate(models.Model):
         ("general", "General"),
     ]
 
-    event_type = models.CharField(max_length=50, choices=EVENT_CHOICES, unique=True)
+    event_type = models.CharField(
+        max_length=50, choices=EVENT_CHOICES, unique=True)
     title_template = models.CharField(max_length=255)
     body_template = models.TextField()
 

@@ -4,6 +4,7 @@ from .views import (
     NotificationViewSet,
     PushSubscriptionViewSet,
     NotificationPreferenceUpdateView,
+    NotificationTypesView,
 )
 
 router = DefaultRouter()
@@ -14,5 +15,7 @@ router.register(r"subscriptions", PushSubscriptionViewSet,
 
 urlpatterns = [
     path("preferences/", NotificationPreferenceUpdateView.as_view(),
+         name="preferences"),
+    path("types/", NotificationTypesView.as_view(),
          name="preferences"),
 ] + router.urls

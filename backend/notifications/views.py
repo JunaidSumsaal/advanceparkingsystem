@@ -1,4 +1,4 @@
-from rest_framework import viewsets, generics, permissions, status
+from rest_framework import viewsets, generics, permissions, status, views
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
@@ -16,6 +16,11 @@ class NotificationPagination(PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 100
 
+# Notification types
+class NotificationTypesView(views.APIView):
+    def get(self, request):
+        types = Notification.objects.values_list('type', flat=True).distinct()
+        return Response(types)
 
 # Notifications
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):

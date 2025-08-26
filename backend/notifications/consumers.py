@@ -8,18 +8,20 @@ from .serializers import NotificationSerializer
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        """Connect only if user is authenticated."""
         if self.scope["user"].is_anonymous:
             await self.close()
         else:
             self.user = self.scope["user"]
             self.group_name = f"user_{self.user.id}"
             await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.channel_layer.group_add("public_notifications", self.channel_name)
+
             await self.accept()
 
     async def disconnect(self, close_code):
         """Remove from group on disconnect."""
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        await self.channel_layer.group_discard("public_notifications", self.channel_name)
 
     async def receive(self, text_data):
         """Handle client requests (fetch unread, mark read, etc.)."""
@@ -54,7 +56,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def fetch_unread_notifications(self, user_id):
         """Fetch unread notifications and serialize them."""
-        qs = Notification.objects.filter(user_id=user_id, is_read=False).order_by("-sent_at")
+        qs = Notification.objects.filter(
+            user_id=user_id, is_read=False).order_by("-sent_at")
         return NotificationSerializer(qs, many=True).data
 
     @database_sync_to_async
