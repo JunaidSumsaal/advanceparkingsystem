@@ -30,4 +30,5 @@ ENV DJANGO_SETTINGS_MODULE=core.settings
 
 EXPOSE 8000
 
-CMD ["gunicorn", "core.asgi:application", "--bind", "0.0.0.0:8000", "--workers=4", "--threads=2", "--timeout=120"]
+# CMD ["gunicorn", "core.asgi:application", "--bind", "0.0.0.0:8000", "--workers=4", "--threads=2", "--timeout=120"]
+CMD ["gunicorn", "core.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers=8", "--threads=4", "--timeout=180"]
