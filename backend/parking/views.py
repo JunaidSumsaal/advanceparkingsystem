@@ -346,11 +346,31 @@ class NearbyParkingSpotsView(APIView):
             body = f"No parking spots found within {int(radius_km)} km."
 
         if getattr(request, "user", None) and request.user.is_authenticated:
-            send_notification_async.delay(request.user.id, title, body)
+            try:
+                # Try async delivery
+                send_notification_async.delay(request.user.id, title, body)
+            except Exception as e:
+                logger.exception("Celery task dispatch failed: %s", e)
+                # Fallback → store directly in DB
+                Notification.objects.create(
+                    user=request.user,
+                    title=title,
+                    body=body,
+                    type="private",
+                    status="pending",
+                    delivered=False,
+                    sent_at=timezone.now(),
+                )
         else:
+            # Public (no user)
             Notification.objects.create(
-                user=None, title=title, body=body,
-                type="public", status="pending", delivered=False, sent_at=timezone.now()
+                user=None,
+                title=title,
+                body=body,
+                type="public",
+                status="pending",
+                delivered=False,
+                sent_at=timezone.now(),
             )
 
     def _get_osm_import_user(self):
