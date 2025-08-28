@@ -13,7 +13,7 @@ import type {
   Notifications,
 } from "../types/context/notification";
 import { useToast } from "@chakra-ui/react";
-// import { wsUrl } from "../services/constants";
+import { wsUrl } from "../services/constants";
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notifications[]>([]);
@@ -164,7 +164,7 @@ export const useNotifications = () => {
     if (!token) return;
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrls = `${protocol}://localhost:8000/ws/notifications`;
+    const wsUrls = `${protocol}://${wsUrl}/ws/notifications`;
 
     const ws = new WebSocket(`${wsUrls}/?token=${token}`);
 

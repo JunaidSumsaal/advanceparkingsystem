@@ -40,7 +40,7 @@ import {
 } from "@chakra-ui/react";
 import L from "leaflet";
 import Dash from "../../../components/loader/dashboard";
-// import { wsUrl } from "../../../services/constants";
+import { wsUrl } from "../../../services/constants";
 
 // Fix Leaflet default icon
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -150,7 +150,7 @@ const Maps = () => {
     const token = Cookies.get("token");
     if (!token) return;
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrls = `${protocol}://localhost:8000/ws/parking`;
+    const wsUrls = `${protocol}://${wsUrl}/ws/parking`;
 
     const ws = new WebSocket(wsUrls + `/?token=${token}`);
 
