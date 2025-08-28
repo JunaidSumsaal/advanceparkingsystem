@@ -5,8 +5,8 @@ export const API =
 ;
 export const wsUrl =
   import.meta.env.MODE === "development"
-    ? import.meta.env.VITE_WS_URL || 'wss://https://localhost:8000/ws/notifications/'
-    : "wss://https://advancepackingsystem-backend.onrender.com/ws/notifications/";
+    ? import.meta.env.VITE_WS_URL || 'ws://https://localhost:8000/ws'
+    : "wss://https://advancepackingsystem-backend.onrender.com/ws";
 ;
 export const SECURE = import.meta.env.VITE_API_SECURE || false;
 

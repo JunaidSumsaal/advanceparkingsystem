@@ -1,32 +1,42 @@
-import django.utils
+import logging
 import math
-from geopy.distance import geodesic
 import requests
+from math import radians
+from typing import List, Dict, Tuple, Set
+from django.db import transaction
+from django.conf import settings
+from django.utils import timezone
+from parking.utils import calculate_distance
 from rest_framework import generics, permissions, viewsets, status
+from geopy.distance import geodesic
+from django.core.cache import cache
+from django.contrib.auth import get_user_model
+from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from math import radians
-from django.utils import timezone
 from accounts.utils import IsProviderOrAdmin, IsAdminOrSuperuser, IsAdminOrFacilityProvider, log_action
 from notifications.models import Notification
 from notifications.tasks import send_notification_async
-from parking.utils import calculate_distance
 from .models import ArchiveReport, ParkingFacility, ParkingSpot, Booking, SpotAvailabilityLog, SpotPredictionLog, SpotPriceLog
 from .serializers import (
     ArchiveReportSerializer, ParkingFacilitySerializer, ParkingSpotSerializer, BookingSerializer,
     SpotReviewSerializer, SpotAvailabilityLogSerializer, SpotPredictionSerializer, SpotPriceLogSerializer
 )
 from .prediction_service import predict_spots_nearby
+from .utils import (
+    bucket_key,
+    query_overpass_any,
+    send_websocket_update,
+)
 from core.metrics import (
     PREDICTION_REQUESTS, PREDICTION_LATENCY, PREDICTION_SAVED,
     BOOKING_CREATED, BOOKING_ENDED, ACTIVE_AVAILABLE_SPOTS, SPOT_SELECTED
 )
 from .pricing import update_dynamic_prices
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-
+logger = logging.getLogger(__name__)
+User = get_user_model()
 
 def update_available_spots_metric():
     ACTIVE_AVAILABLE_SPOTS.set(
@@ -201,138 +211,187 @@ class NearbyParkingSpotsView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        # Parse & validate
         lat = request.query_params.get("lat")
         lng = request.query_params.get("lng")
         radius_km = float(request.query_params.get("radius", 200))
+        limit = int(request.query_params.get("limit", 60))
+        target_count = settings.PARKING["TARGET_RESULT_COUNT"]
 
         if not lat or not lng:
             return Response({"error": "Latitude and longitude are required."}, status=400)
-
         try:
             lat = float(lat)
             lng = float(lng)
         except ValueError:
             return Response({"error": "Invalid coordinates."}, status=400)
 
-        # Step 1: check DB spots using geopy
-        spots = ParkingSpot.objects.filter(is_available=True)
-        nearby_spots = [
-            spot for spot in spots
-            if geodesic(
-                (lat, lng),
-                (float(spot.latitude), float(spot.longitude))
-            ).km <= radius_km
-        ]
+        # safety cap
+        radius_km = float(min(radius_km, settings.PARKING["MAX_RADIUS_KM"]))
 
-        if nearby_spots:
-            serializer = ParkingSpotSerializer(nearby_spots, many=True)
-            self._notify_user(request, len(nearby_spots),
-                              radius_km, source="database")
+        # 1) DB quick-filter by distance
+        db_spots_qs = ParkingSpot.objects.filter(is_active=True, is_archived=False)
+        # we'll compute distance in Python (simple & safe for now)
+        db_spots = [
+            s for s in db_spots_qs
+            if geodesic((lat, lng), (float(s.latitude), float(s.longitude))).km <= radius_km
+        ]
+        db_spots_available = [s for s in db_spots if s.is_available]
+
+        if db_spots_available:
+            data = ParkingSpotSerializer(db_spots_available[:limit], many=True).data
+            self._notify_user(request, len(db_spots_available), radius_km, source="database")
             return Response({
                 "source": "database",
-                "results": serializer.data,
-                "within_radius": len(nearby_spots),
+                "results": data,
+                "within_radius": len(db_spots_available),
                 "radius": radius_km
-            })
+            }, status=200)
 
-        # Step 2: query Overpass API
-        results = self.query_overpass(lat, lng, radius_km)
-
-        if results:
-            cached_spots = self.cache_osm_spots(results)
-            serializer = ParkingSpotSerializer(cached_spots, many=True)
-            self._notify_user(request, len(cached_spots),
-                              radius_km, source="osm")
+        # 2) Cached Overpass results (fast path)
+        cache_key = bucket_key(lat, lng, radius_km)
+        cached_ids: List[int] = cache.get(cache_key, [])
+        cached_spots = list(ParkingSpot.objects.filter(id__in=cached_ids, is_active=True))
+        cached_spots = [
+            s for s in cached_spots
+            if geodesic((lat, lng), (float(s.latitude), float(s.longitude))).km <= radius_km
+        ]
+        if cached_spots:
+            data = ParkingSpotSerializer(cached_spots[:limit], many=True).data
+            self._notify_user(request, len(cached_spots), radius_km, source="cache")
             return Response({
-                "source": "osm",
-                "results": serializer.data,
+                "source": "cache",
+                "results": data,
                 "within_radius": len(cached_spots),
                 "radius": radius_km
-            })
+            }, status=200)
 
-        # Step 3: Expand search up to 200km (cap at 500km)
-        if radius_km < 200:
-            new_radius = min(radius_km * 10, 500)
-            return self._retry_with_expanded_radius(request, lat, lng, new_radius)
+        # 3) Progressive Overpass expansion
+        collected: List[ParkingSpot] = []
+        seen_ext: Set[str] = set()
+        sources_used: List[str] = []
 
-        # Step 4: No results
+        for r in settings.PARKING["EXPANSION_RADII_KM"]:
+            if r > radius_km:
+                break
+
+            osm = query_overpass_any(lat, lng, r)
+            sources_used.append(f"osm:{r}km")
+            if not osm:
+                # try next radius silently
+                continue
+
+            # cache into DB + collect spots
+            new_spots = self._cache_osm_spots(osm)
+            # filter by distance anyway (center vs nodes)
+            new_spots = [
+                s for s in new_spots
+                if geodesic((lat, lng), (float(s.latitude), float(s.longitude))).km <= r
+            ]
+
+            # de-duplicate by external_id
+            dedup: List[ParkingSpot] = []
+            for s in new_spots:
+                ext = getattr(s, "external_id", None)
+                if ext and ext in seen_ext:
+                    continue
+                if ext:
+                    seen_ext.add(ext)
+                dedup.append(s)
+
+            collected.extend(dedup)
+
+            if len(collected) >= target_count:
+                break
+
+        # Save cache key for this bucket (IDs only), if we found anything
+        if collected:
+            ids = [s.id for s in collected]
+            cache.set(cache_key, ids, timeout=settings.PARKING["CACHE_TTL_SECONDS"])
+
+            # Broadcast to WS
+            try:
+                for s in collected[:10]:
+                    send_websocket_update(s)
+            except Exception:
+                logger.exception("WS broadcast failed (non-fatal)")
+
+            data = ParkingSpotSerializer(collected[:limit], many=True).data
+            self._notify_user(request, len(collected), radius_km, source=";".join(sources_used))
+            return Response({
+                "source": "osm",
+                "results": data,
+                "within_radius": len(collected),
+                "radius": radius_km
+            }, status=200)
+
+        # Graceful empty response
         self._notify_user(request, 0, radius_km, source="none")
         return Response({
-            "message": f"No parking found within {radius_km} km.",
-            "results": []
+            "source": "none",
+            "results": [],
+            "within_radius": 0,
+            "radius": radius_km,
+            "message": "No parking found (DB+OSM)."
         }, status=200)
 
-    # Helper methods
-    def query_overpass(self, lat, lng, radius_km):
-        radius_m = int(radius_km * 1000)
-        query = f"""
-        [out:json];
-        (
-          node["amenity"="parking"](around:{radius_m},{lat},{lng});
-          way["amenity"="parking"](around:{radius_m},{lat},{lng});
-          relation["amenity"="parking"](around:{radius_m},{lat},{lng});
-        );
-        out center;
-        """
-        url = "https://overpass-api.de/api/interpreter"
-        resp = requests.post(url, data={"data": query}, timeout=25)
-        data = resp.json()
+    # --- Helpers ---
 
-        results = []
-        for el in data.get("elements", []):
-            results.append({
-                "id": el.get("id"),
-                "name": el.get("tags", {}).get("name", "Unnamed Parking"),
-                "lat": el.get("lat") or el.get("center", {}).get("lat"),
-                "lng": el.get("lon") or el.get("center", {}).get("lon"),
-                "tags": el.get("tags", {}),
-            })
-        return results
-
-    def cache_osm_spots(self, results):
-        """Save OSM results into DB if not already stored"""
-        cached = []
-        for r in results:
-            spot, _ = ParkingSpot.objects.get_or_create(
-                external_id=str(r["id"]),
-                defaults={
-                    "name": r["name"],
-                    "latitude": r["lat"],
-                    "longitude": r["lng"],
-                    "is_available": True,
-                    "source": "osm",  # mark source if you have this field
-                },
-            )
-            cached.append(spot)
-        return cached
-
-    def _retry_with_expanded_radius(self, request, lat, lng, new_radius):
-        """Retry search with expanded radius"""
-        request.GET._mutable = True
-        request.GET["radius"] = str(new_radius)
-        return self.get(request)
-
-    def _notify_user(self, request, count, radius_km, source="database"):
-        """Send notification to user or fallback to public"""
+    def _notify_user(self, request, count: int, radius_km: float, source: str = "database"):
         if count > 0:
             title = "Nearby Parking Found 🚗"
-            body = f"{count} parking spots found within {radius_km} km ({source})."
+            body = f"{count} parking spots found within {int(radius_km)} km ({source})."
         else:
             title = "No Parking Nearby ❌"
-            body = f"No parking spots found within {radius_km} km."
+            body = f"No parking spots found within {int(radius_km)} km."
 
-        if request.user.is_authenticated:
+        if getattr(request, "user", None) and request.user.is_authenticated:
             send_notification_async.delay(request.user.id, title, body)
         else:
             Notification.objects.create(
-                user=None,
-                title=title,
-                body=body,
-                type="public",
-                status="pending",
-                delivered=False,
-                sent_at=timezone.now(),
+                user=None, title=title, body=body,
+                type="public", status="pending", delivered=False, sent_at=timezone.now()
             )
+
+    def _get_osm_import_user(self):
+        username = settings.PARKING.get("OSM_IMPORT_USERNAME")
+        if not username:
+            return None
+        try:
+            return User.objects.get(username=username)
+        except User.DoesNotExist:
+            return None
+
+    @transaction.atomic
+    def _cache_osm_spots(self, results: List[Dict]) -> List[ParkingSpot]:
+        """
+        Idempotently store OSM results in DB.
+        - Avoids NOT NULL created_by errors by assigning a service user if required.
+        """
+        created_by = self._get_osm_import_user()
+        objs: List[ParkingSpot] = []
+
+        for r in results:
+            defaults = {
+                "name": r.get("name") or "Unnamed Parking",
+                "latitude": r["lat"],
+                "longitude": r["lng"],
+                "is_available": True,
+                "is_active": True,
+                "is_archived": False,
+                "source": "osm",
+            }
+            # If your ParkingSpot.created_by has NOT NULL constraint:
+            if hasattr(ParkingSpot, "created_by") and not ParkingSpot._meta.get_field("created_by").null:
+                defaults["created_by"] = created_by
+
+            spot, _ = ParkingSpot.objects.update_or_create(
+                external_id=str(r["id"]),
+                defaults=defaults,
+            )
+            objs.append(spot)
+        return objs
+
 
 
 class NearbyPredictionsView(APIView):

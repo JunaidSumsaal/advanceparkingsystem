@@ -13,11 +13,9 @@ import {
 } from "@chakra-ui/react";
 import {
   LayoutDashboard,
-  User,
   Settings,
   Bell,
   MapPin,
-  BookCheckIcon,
 } from "lucide-react";
 import type { BoxProps } from "@chakra-ui/react";
 import { type IconType } from "react-icons";
@@ -47,12 +45,12 @@ const LinkItems: Array<{
   //   path: "/dashboard/metrics",
   //   roles: ["admin", "provider"],
   // },
-  {
-    name: "Bookings",
-    icon: BookCheckIcon,
-    path: "/dashboard/booking",
-    roles: ["admin"],
-  },
+  // {
+  //   name: "Bookings",
+  //   icon: BookCheckIcon,
+  //   path: "/dashboard/booking",
+  //   roles: ["admin"],
+  // },
   {
     name: "Maps",
     icon: MapPin,
@@ -71,11 +69,11 @@ const LinkItems: Array<{
     path: "/dashboard/settings",
     roles: ["admin", "provider", "attendant", "driver"],
   },
-  { name: "Users",
-    icon: User,
-    path: "/dashboard/users",
-    roles: ["admin"]
-  },
+  // { name: "Users",
+  //   icon: User,
+  //   path: "/dashboard/users",
+  //   roles: ["admin"]
+  // },
 ];
 
 const SidebarContent = ({

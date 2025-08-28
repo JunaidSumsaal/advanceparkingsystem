@@ -88,8 +88,6 @@ ROOT_URLCONF = 'core.urls'
 
 AUTH_USER_MODEL = 'accounts.User'
 
-ASGI_APPLICATION = "core.asgi.application"
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -106,6 +104,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = "core.asgi.application"
 
 
 DATABASES = {
@@ -239,3 +238,18 @@ EMAIL_HOST = env("EMAIL_HOST", default="smtp.example.com")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', True)
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+
+
+PARKING = {
+    "OVERPASS_ENDPOINTS": [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.openstreetmap.ru/api/interpreter",
+    ],
+    "OVERPASS_TIMEOUT_SECONDS": 25,
+    "CACHE_TTL_SECONDS": 60 * 60 * 24,
+    "MAX_RADIUS_KM": 500,
+    "EXPANSION_RADII_KM": [5, 10, 20, 50, 100, 200],
+    "OSM_IMPORT_USERNAME": "osm-import",
+    "TARGET_RESULT_COUNT": 40,
+}
