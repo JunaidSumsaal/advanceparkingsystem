@@ -385,15 +385,12 @@ const Maps = () => {
                     rel="noopener noreferrer"
                     mt={2}
                     size="sm"
-                    bg="primary.400"
-                    _hover={{
-                      bg: "primary.600",
-                    }}
+                    colorScheme="blue"
                   >
                     Get Directions
                   </Button>
                 )}
-                {(role === "driver" || role === "admin") && spot.is_available && (
+                {/**(role === "driver" || role === "admin") && spot.is_available && (
                   <Button
                     mt={2}
                     size="sm"
@@ -402,7 +399,7 @@ const Maps = () => {
                   >
                     Book Now
                   </Button>
-                )}
+                )*/}
               </Popup>
             </Marker>
           ))}
