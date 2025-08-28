@@ -10,7 +10,6 @@ import { useEffect, useState } from "react";
 import { useUserRole } from "../../../hooks/useUserRole";
 import {
   getNearbySpots,
-  createBooking,
   createSpot,
 } from "../../../services/parkingServices";
 import {
@@ -212,31 +211,31 @@ const Maps = () => {
   };
 
   // Booking handler
-  const handleBookSpot = async (spotId: number | string) => {
-    try {
-      await createBooking(spotId);
-      toast({
-        title: "Booking confirmed 🎉",
-        description: "Your parking spot has been reserved.",
-        status: "success",
-        duration: 4000,
-        isClosable: true,
-        position: "top",
-      });
-      setSpots((prev) =>
-        prev.map((s) => (s.id === spotId ? { ...s, is_available: false } : s))
-      );
-    } catch {
-      toast({
-        title: "Booking failed",
-        description: "Something went wrong. Try again.",
-        status: "error",
-        duration: 4000,
-        isClosable: true,
-        position: "top",
-      });
-    }
-  };
+  // const handleBookSpot = async (spotId: number | string) => {
+  //   try {
+  //     await createBooking(spotId);
+  //     toast({
+  //       title: "Booking confirmed 🎉",
+  //       description: "Your parking spot has been reserved.",
+  //       status: "success",
+  //       duration: 4000,
+  //       isClosable: true,
+  //       position: "top",
+  //     });
+  //     setSpots((prev) =>
+  //       prev.map((s) => (s.id === spotId ? { ...s, is_available: false } : s))
+  //     );
+  //   } catch {
+  //     toast({
+  //       title: "Booking failed",
+  //       description: "Something went wrong. Try again.",
+  //       status: "error",
+  //       duration: 4000,
+  //       isClosable: true,
+  //       position: "top",
+  //     });
+  //   }
+  // };
 
   // Add spot handler
   const handleAddSpot = async () => {
@@ -386,6 +385,7 @@ const Maps = () => {
                     mt={2}
                     size="sm"
                     colorScheme="blue"
+                    className="!text-color-white"
                   >
                     Get Directions
                   </Button>
