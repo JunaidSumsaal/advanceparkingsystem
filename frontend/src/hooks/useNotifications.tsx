@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import Cookies from "js-cookie";
+// import Cookies from "js-cookie";
 import {
   unreadCount as fetchUnreadCount,
   getNotifications,
@@ -13,7 +13,7 @@ import type {
   Notifications,
 } from "../types/context/notification";
 import { useToast } from "@chakra-ui/react";
-import { wsUrl } from "../services/constants";
+// import { wsUrl } from "../services/constants";
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notifications[]>([]);
@@ -26,7 +26,7 @@ export const useNotifications = () => {
   const [total, setTotal] = useState<number>(0);
   const [noNotifications, setNoNotifications] = useState<boolean>(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
+  // const wsRef = useRef<WebSocket | null>(null);
   const toast = useToast();
 
   const refreshUnread = useCallback(async () => {
@@ -159,43 +159,43 @@ export const useNotifications = () => {
   };
   
   // WebSocket
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (!token) return;
+  // useEffect(() => {
+  //   const token = Cookies.get("token");
+  //   if (!token) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrls = `${protocol}://${wsUrl}/ws/notifications`;
+  //   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  //   const wsUrls = `${protocol}://${wsUrl}/ws/notifications`;
 
-    const ws = new WebSocket(`${wsUrls}/?token=${token}`);
+  //   const ws = new WebSocket(`${wsUrls}/?token=${token}`);
 
-    wsRef.current = ws;
+  //   wsRef.current = ws;
 
-    ws.onopen = () => {
-      console.log("Connected to notifications WS");
-    };
+  //   ws.onopen = () => {
+  //     console.log("Connected to notifications WS");
+  //   };
 
-    ws.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-      console.log("📩 Incoming notification:", data);
+  //   ws.onmessage = async (event) => {
+  //     const data = JSON.parse(event.data);
+  //     console.log("📩 Incoming notification:", data);
 
-      // backend sends { type: "...", data: {...} }
-      if (data.type === "send_notification") {
-        const notif: Notifications = data.data;
-        setNotifications((prev) => [notif, ...prev]);
-        await refreshUnread();
-      }
-      if (data.type === "unread_notifications") {
-        setNotifications(data.notifications);
-      }
-    };
+  //     // backend sends { type: "...", data: {...} }
+  //     if (data.type === "send_notification") {
+  //       const notif: Notifications = data.data;
+  //       setNotifications((prev) => [notif, ...prev]);
+  //       await refreshUnread();
+  //     }
+  //     if (data.type === "unread_notifications") {
+  //       setNotifications(data.notifications);
+  //     }
+  //   };
 
-    ws.onclose = () => console.log("WS closed");
-    ws.onerror = (err) => console.error("WS Error:", err);
+  //   ws.onclose = () => console.log("WS closed");
+  //   ws.onerror = (err) => console.error("WS Error:", err);
 
-    return () => {
-      ws.close();
-    };
-  }, [refreshUnread]);
+  //   return () => {
+  //     ws.close();
+  //   };
+  // }, [refreshUnread]);
 
   return {
     notifications,

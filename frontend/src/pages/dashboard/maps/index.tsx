@@ -6,7 +6,6 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 import { useUserRole } from "../../../hooks/useUserRole";
 import {
@@ -40,7 +39,7 @@ import {
 } from "@chakra-ui/react";
 import L from "leaflet";
 import Dash from "../../../components/loader/dashboard";
-import { wsUrl } from "../../../services/constants";
+// import { wsUrl } from "../../../services/constants";
 
 // Fix Leaflet default icon
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -146,36 +145,36 @@ const Maps = () => {
   }, [position, radius, toast]);
 
   // WebSocket subscription for live updates
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (!token) return;
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrls = `${protocol}://${wsUrl}/ws/parking`;
+  // useEffect(() => {
+  //   const token = Cookies.get("token");
+  //   if (!token) return;
+  //   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  //   const wsUrls = `${protocol}://${wsUrl}/ws/parking`;
 
-    const ws = new WebSocket(wsUrls + `/?token=${token}`);
+  //   const ws = new WebSocket(wsUrls + `/?token=${token}`);
 
-    ws.onmessage = (evt) => {
-      try {
-        const payload = JSON.parse(evt.data);
-        setSpots((prev) => {
-          const idx = prev.findIndex((s) => s.id === payload.id);
-          if (idx >= 0) {
-            const copy = [...prev];
-            copy[idx] = { ...copy[idx], ...payload };
-            return copy;
-          }
-          return [...prev, payload];
-        });
-      } catch (e) {
-        console.warn("WS parse error", e);
-      }
-    };
+  //   ws.onmessage = (evt) => {
+  //     try {
+  //       const payload = JSON.parse(evt.data);
+  //       setSpots((prev) => {
+  //         const idx = prev.findIndex((s) => s.id === payload.id);
+  //         if (idx >= 0) {
+  //           const copy = [...prev];
+  //           copy[idx] = { ...copy[idx], ...payload };
+  //           return copy;
+  //         }
+  //         return [...prev, payload];
+  //       });
+  //     } catch (e) {
+  //       console.warn("WS parse error", e);
+  //     }
+  //   };
 
-    ws.onerror = () => console.warn("WebSocket error");
-    ws.onclose = () => console.log("WebSocket closed");
+  //   ws.onerror = () => console.warn("WebSocket error");
+  //   ws.onclose = () => console.log("WebSocket closed");
 
-    return () => ws.close();
-  }, []);
+  //   return () => ws.close();
+  // }, []);
 
   // Search handler
   const handleSearch = async () => {
