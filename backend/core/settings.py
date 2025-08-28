@@ -108,11 +108,14 @@ ASGI_APPLICATION = "core.asgi.application"
 
 
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default="postgres://username:password@localhost:5432/advanceparkingsystem"
-    )
-}
+    "default": {
+        "ENGINE": "django.contrib.gis.db.backends.postgis",
+        "NAME": env("DB_NAME", default="dummy_db"),
+        "USER": env("DB_USER", default="dummy_user"),
+        "PASSWORD": env("DB_PASSWORD", default="dummy_password"),
+        "HOST": env("DB_HOST", default="localhost"),
+        "PORT": env("DB_PORT", default="5432"),
+    }
 
 
 # if DEBUG:
