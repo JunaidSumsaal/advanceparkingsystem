@@ -116,6 +116,7 @@ DATABASES = {
         "HOST": env("DB_HOST", default="localhost"),
         "PORT": env("DB_PORT", default="5432"),
     }
+}
 
 
 # if DEBUG:
