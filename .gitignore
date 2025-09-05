@@ -3,5 +3,4 @@
 __pycache__
 .vscode
 backend/celerybeat-schedule
-.vscode/
 backend/.vscode/
