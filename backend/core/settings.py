@@ -17,7 +17,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env(
     'SECRET_KEY', default='ef365827fed3b2bbe05aa453f557098e48b9d713517721c6116df666b8e370f443b8214935766de02be228a499573085')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = ['localhost', 'advanceparkingsystem.onrender.com', 'advancepackingsystem-backend.onrender.com', 'advancepackingsystem-backend.onrender.com']
+ALLOWED_HOSTS = ['*', 'localhost', 'advanceparkingsystem.onrender.com', 'advancepackingsystem-backend.onrender.com', 'advancepackingsystem-backend.onrender.com']
 
 if DEBUG:
     CELERY_BROKER_URL = "redis://localhost:6379/0"
