@@ -247,10 +247,12 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 PARKING = {
     "OVERPASS_ENDPOINTS": [
         "https://overpass-api.de/api/interpreter",
-        "https://overpass.kumi.systems/api/interpreter",
         "https://overpass.openstreetmap.ru/api/interpreter",
+        "https://lz4.overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.nchc.org.tw/api/interpreter"
     ],
-    "OVERPASS_TIMEOUT_SECONDS": 25,
+    "OVERPASS_TIMEOUT_SECONDS": 60,
     "CACHE_TTL_SECONDS": 60 * 60 * 24,
     "MAX_RADIUS_KM": 500,
     "EXPANSION_RADII_KM": [5, 10, 20, 50, 100, 200],

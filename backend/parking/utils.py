@@ -1,3 +1,5 @@
+from typing import Dict, List
+import random
 from typing import Dict, List, Tuple
 import requests
 from django.conf import settings
@@ -12,62 +14,82 @@ from notifications.utils import send_web_push
 
 logger = logging.getLogger(__name__)
 
-def bucket_key(lat: float, lng: float, radius_km: float, precision: int = 3) -> str:
-    return f"osm:{round(lat, precision)}:{round(lng, precision)}:{int(radius_km)}"
 
-def build_overpass_query(lat: float, lng: float, radius_km: float) -> str:
-    radius_m = int(radius_km * 1000)
-    return f"""
-    [out:json][timeout:{settings.PARKING["OVERPASS_TIMEOUT_SECONDS"]}];
+def bucket_key(lat: float, lng: float, radius_km: float, precision: int = 2) -> str:
+    """
+    Build a cache bucket key for OSM queries.
+    Default precision=2 so nearby coords share cache buckets (avoids cache fragmentation).
+    """
+    key = f"osm:{round(lat, precision)}:{round(lng, precision)}:{int(radius_km)}"
+    logger.debug("Generated bucket_key=%s (lat=%.5f, lng=%.5f, r=%.1f km, precision=%d)",
+                 key, lat, lng, radius_km, precision)
+    return key
+
+
+def query_overpass_any(lat: float, lng: float, radius_km: float,
+                       max_retries: int = 3, base_backoff: int = 2) -> List[Dict]:
+    """
+    Query OSM Overpass API with endpoint rotation + retries + backoff.
+    Returns [] on total failure.
+    """
+    query = f"""
+    [out:json][timeout:{settings.PARKING['OVERPASS_TIMEOUT_SECONDS']}];
     (
-      node["amenity"="parking"](around:{radius_m},{lat},{lng});
-      way["amenity"="parking"](around:{radius_m},{lat},{lng});
-      relation["amenity"="parking"](around:{radius_m},{lat},{lng});
-
-      node["building"="parking"](around:{radius_m},{lat},{lng});
-      way["building"="parking"](around:{radius_m},{lat},{lng});
-      relation["building"="parking"](around:{radius_m},{lat},{lng});
-
-      node["parking"](around:{radius_m},{lat},{lng});
-      way["parking"](around:{radius_m},{lat},{lng});
-      relation["parking"](around:{radius_m},{lat},{lng});
+      node["amenity"="parking"](around:{int(radius_km*1000)},{lat},{lng});
+      way["amenity"="parking"](around:{int(radius_km*1000)},{lat},{lng});
+      relation["amenity"="parking"](around:{int(radius_km*1000)},{lat},{lng});
     );
     out center;
     """
 
-def parse_overpass_json(data: Dict) -> List[Dict]:
-    elements = data.get("elements", []) or []
-    results: List[Dict] = []
-    for el in elements:
-        tags = el.get("tags", {}) or {}
-        lat = el.get("lat") or (el.get("center") or {}).get("lat")
-        lon = el.get("lon") or (el.get("center") or {}).get("lon")
-        if lat is None or lon is None:
-            continue
-        results.append({
-            "id": str(el.get("id")),
-            "name": tags.get("name", "Unnamed Parking"),
-            "lat": float(lat),
-            "lng": float(lon),
-            "tags": tags,
-        })
-    return results
+    endpoints = settings.PARKING["OVERPASS_ENDPOINTS"].copy()
+    random.shuffle(endpoints)  # spread requests across mirrors
 
-def query_overpass_any(lat: float, lng: float, radius_km: float) -> List[Dict]:
-    """Try mirrors. Return empty list on failure (no exceptions)."""
-    query = build_overpass_query(lat, lng, radius_km)
-    for url in settings.PARKING["OVERPASS_ENDPOINTS"]:
-        try:
-            # Courtesy small pause to avoid hammering mirrors
-            time.sleep(0.3)
-            resp = requests.post(url, data={"data": query},
-                                 timeout=settings.PARKING["OVERPASS_TIMEOUT_SECONDS"])
-            resp.raise_for_status()
-            return parse_overpass_json(resp.json())
-        except requests.exceptions.RequestException as e:
-            logger.warning("Overpass failed on %s (r=%.1fkm): %s", url, radius_km, e)
-            continue
-    logger.error("All Overpass mirrors failed for r=%.1fkm", radius_km)
+    for endpoint in endpoints:
+        backoff = base_backoff
+        for attempt in range(max_retries):
+            try:
+                resp = requests.post(
+                    endpoint,
+                    data={"data": query},
+                    timeout=settings.PARKING["OVERPASS_TIMEOUT_SECONDS"]
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+                results = []
+                for el in data.get("elements", []):
+                    tags = el.get("tags", {}) or {}
+                    latlng = el.get("center") or {
+                        "lat": el.get("lat"),
+                        "lon": el.get("lon")
+                    }
+                    if not latlng["lat"] or not latlng["lon"]:
+                        continue
+                    results.append({
+                        "id": str(el["id"]),
+                        "name": tags.get("name", "Unnamed Parking"),
+                        "lat": float(latlng["lat"]),
+                        "lng": float(latlng["lon"]),
+                        "tags": tags,
+                    })
+
+                logger.info(
+                    "Overpass success endpoint=%s radius=%.1fkm → %d results",
+                    endpoint, radius_km, len(results)
+                )
+                return results
+
+            except Exception as e:
+                logger.warning(
+                    "Overpass failed (attempt %d/%d) endpoint=%s radius=%.1fkm → %s",
+                    attempt + 1, max_retries, endpoint, radius_km, e
+                )
+                time.sleep(backoff)
+                backoff *= 2
+
+    logger.error(
+        "All Overpass mirrors failed after retries (r=%.1fkm)", radius_km)
     return []
 
 

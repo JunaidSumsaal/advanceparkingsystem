@@ -28,19 +28,51 @@ class Notification(models.Model):
         null=True,
         blank=True,
     )
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="children"
+    )
     title = models.CharField(max_length=255)
     body = models.TextField()
     type = models.CharField(
-        max_length=50, default="general", choices=NOTIFICATION_TYPES)
-    sent_at = models.DateTimeField(auto_now_add=True)
+        max_length=50, default="general", choices=NOTIFICATION_TYPES
+    )
+
+    sent_at = models.DateTimeField(null=True, blank=True)
     delivered = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default="pending")
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
     is_public = models.BooleanField(default=False)
+    extra = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.title} -> {self.user.username}"
+        if self.user:
+            return f"{self.title} -> {self.user.username}"
+        return f"{self.title} (public parent)"
+
+    # Helpers
+    @property
+    def is_parent(self):
+        return self.user is None and self.is_public
+
+    @property
+    def delivered_children_count(self):
+        return self.children.filter(delivered=True).count()
+
+    @property
+    def total_children_count(self):
+        return self.children.count()
+
+    @property
+    def completion_rate(self):
+        total = self.total_children_count
+        return (self.delivered_children_count / total) if total > 0 else 0
 
 
 class NotificationPreference(models.Model):

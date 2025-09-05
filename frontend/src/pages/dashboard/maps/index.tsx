@@ -8,10 +8,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import { useUserRole } from "../../../hooks/useUserRole";
-import {
-  getNearbySpots,
-  createSpot,
-} from "../../../services/parkingServices";
+import { getNearbySpots, createSpot } from "../../../services/parkingServices";
 import {
   Box,
   Text,
@@ -69,7 +66,7 @@ const Maps = () => {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [filter, setFilter] = useState<string>("all");
-  const [radius, setRadius] = useState<number>(500);
+  const [radius, setRadius] = useState<number>(5);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [newSpotCoords, setNewSpotCoords] = useState<[number, number] | null>(
     null
@@ -115,13 +112,15 @@ const Maps = () => {
             offset: 0,
           });
 
-          const fetched = data.results || [];
+          const fetched = data.spots || [];
           setSpots(fetched);
 
           if (!fetched || fetched.length === 0) {
             toast({
               title: "No available spots",
-              description: `No parking spots within ${data.radius || radius}m`,
+              description: `No parking spots within ${
+                data.radius || radius
+              } km`,
               status: "info",
               duration: 4000,
               isClosable: true,
@@ -241,13 +240,16 @@ const Maps = () => {
   const handleAddSpot = async () => {
     if (!newSpotCoords) return;
     try {
-      await createSpot({
+      const newSpot = await createSpot({
         name: formData.name,
         type: formData.type,
         price_per_hour: Number(formData.price),
-        latitude: newSpotCoords[0],
-        longitude: newSpotCoords[1],
+        latitude: parseFloat(newSpotCoords[0].toFixed(6)),
+        longitude: parseFloat(newSpotCoords[1].toFixed(6)),
       });
+
+      setSpots((prev) => [...prev, newSpot]); // add to map immediately
+
       toast({
         title: "Facility added ✅",
         description: "Your parking spot has been added successfully.",
@@ -256,6 +258,9 @@ const Maps = () => {
         isClosable: true,
         position: "top",
       });
+
+      setNewSpotCoords(null);
+      setFormData({ name: "", type: "public", price: "" });
       onClose();
     } catch {
       toast({
@@ -273,7 +278,7 @@ const Maps = () => {
   const MapClickHandler = () => {
     useMapEvents({
       click(e) {
-        if (role === "provider") {
+        if (role === "provider" || role === "admin") {
           setNewSpotCoords([e.latlng.lat, e.latlng.lng]);
           onOpen();
         }
@@ -315,7 +320,13 @@ const Maps = () => {
           <HStack ml={4}>
             <Text fontSize="sm">Radius: {radius} km</Text>
             <Box w="200px">
-              <Slider min={1} max={500} step={1} value={radius} onChange={setRadius}>
+              <Slider
+                min={1}
+                max={500}
+                step={1}
+                value={radius}
+                onChange={setRadius}
+              >
                 <SliderTrack>
                   <SliderFilledTrack />
                 </SliderTrack>
@@ -385,7 +396,7 @@ const Maps = () => {
                     mt={2}
                     size="sm"
                     colorScheme="blue"
-                    className="!text-color-white"
+                    // className="!text-color-white"
                   >
                     Get Directions
                   </Button>

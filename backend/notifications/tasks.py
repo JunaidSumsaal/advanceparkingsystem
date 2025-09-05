@@ -1,5 +1,3 @@
-import requests
-import json
 import logging
 from django.utils import timezone
 from django.db import transaction
@@ -14,45 +12,86 @@ User = get_user_model()
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=5)
-def send_notification_async(self, user_id, title, body, type_="general", extra=None):
-    """
-    Save → Serialize → Send via WebSocket → Try Push → Try Email
-    """
+def send_notification_async(
+    self,
+    user_id,
+    title,
+    body,
+    type_="general",
+    extra=None,
+    notification_id=None,
+    is_public=False,
+):
+    User = get_user_model()
+    user = User.objects.filter(id=user_id).only(
+        "id", "email", "latitude", "longitude").first()
+    if not user:
+        return None
+
+    # Distance filter for public notifications
+    if is_public and extra:
+        lat, lng = extra.get("lat"), extra.get("lng")
+        if lat and lng and user.latitude and user.longitude:
+            distance = get_distance_km(
+                (lat, lng), (user.latitude, user.longitude))
+            if distance is None or distance > 10:
+                return None
+            spot_name = extra.get("spot_name", "Parking Spot")
+            body += f"\n📍 {spot_name} is {distance:.1f} km away."
+
+    # Create child notification for this user
     notif = Notification.objects.create(
         user_id=user_id,
+        parent_id=notification_id,
         title=title,
         body=body,
         type=type_,
         status="pending",
         delivered=False,
+        extra=extra or {},
     )
 
+    delivered = False
+
+    # WebSocket
     try:
         broadcast_ws_to_user(user_id, notif)
     except Exception:
         pass
 
-    delivered = False
-
     # Push Subscriptions
     for sub in PushSubscription.objects.filter(user_id=user_id):
-        ok, _ = send_web_push(sub, {"title": title, "body": body})
-        if ok:
-            delivered = True
+        try:
+            ok, _ = send_web_push(
+                sub, {"title": title, "body": body, "type": type_})
+            if ok:
+                delivered = True
+        except Exception as e:
+            logger.error(f"Push error for sub {sub.id}: {e}")
 
     # Email fallback
-    user = User.objects.filter(id=user_id).only("email").first()
-    if user and user.email:
+    if user.email and not delivered:
         try:
             send_email_notification(user.email, title, body)
             delivered = True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Email error for {user.email}: {e}")
 
+    # Finalize child status
     notif.delivered = delivered
-    notif.status = "sent" if delivered else "pending"
+    notif.status = "sent" if delivered else "failed"
     notif.sent_at = timezone.now()
     notif.save(update_fields=["delivered", "status", "sent_at"])
+
+    # Update parent status if all children are resolved
+    if notification_id:
+        unresolved = Notification.objects.filter(
+            parent_id=notification_id, status="pending"
+        ).exists()
+        if not unresolved:
+            Notification.objects.filter(
+                id=notification_id).update(status="completed")
+
     return notif.id
 
 
@@ -111,72 +150,26 @@ def daily_digest_for_provider(provider_id):
 @shared_task(rate_limit="60/m")
 def send_pending_notifications(batch_size=50):
     pending = Notification.objects.filter(
-        delivered=False, status="pending")[:batch_size]
+        delivered=False, status="pending"
+    ).select_related("user")[:batch_size]
 
     for n in pending:
-        # Public notifications (broadcast within 10km)
         if n.is_public:
-            lat = getattr(n, "extra", {}).get("lat")
-            lng = getattr(n, "extra", {}).get("lng")
-            spot_name = getattr(n, "extra", {}).get(
-                "spot_name", "Parking Spot")
-
-            if not lat or not lng:
-                logger.warning(
-                    f"Public notification {n.id} missing lat/lng, skipping")
-                continue
-
-            users = User.objects.exclude(latitude=None).exclude(longitude=None)
+            users = User.objects.exclude(latitude=None, longitude=None)
         else:
-            # Private notification → just the target user
             users = [n.user] if n.user else []
 
         for user in users:
-            subs = PushSubscription.objects.filter(user=user)
-            if not subs.exists():
-                continue
+            send_notification_async.delay(
+                user.id,
+                n.title,
+                n.body,
+                n.type,
+                extra=n.extra or {},
+                notification_id=n.id,
+                is_public=n.is_public,
+            )
 
-            # Distance filter only for public notifications
-            send_to_user = True
-            distance = None
-            if n.is_public and user.latitude and user.longitude:
-                distance = get_distance_km(
-                    (lat, lng),
-                    (user.latitude, user.longitude),
-                )
-                send_to_user = distance is not None and distance <= 10
+        n.status = "dispatched"
+        n.save(update_fields=["status"])
 
-            if not send_to_user:
-                continue
-
-            delivered = False
-            for sub in subs:
-                try:
-                    body = n.body
-                    if n.is_public and distance is not None:
-                        body += f"\n📍 {spot_name} is {distance:.1f} km away."
-
-                    resp = requests.post(
-                        sub.endpoint,
-                        data=json.dumps({
-                            "title": n.title,
-                            "body": body,
-                            "type": n.type,
-                        }),
-                        headers={"Content-Type": "application/json"},
-                        timeout=5,
-                    )
-                    if resp.status_code in [200, 201]:
-                        delivered = True
-                except requests.exceptions.RequestException as e:
-                    logger.error(f"Push error for sub {sub.id}: {e}")
-
-            # 🔹 Mark delivered / failed
-            if delivered:
-                with transaction.atomic():
-                    n.delivered = True
-                    n.status = "sent"
-                    n.sent_at = timezone.now()
-                    n.save(update_fields=["delivered", "status", "sent_at"])
-            else:
-                n.save(update_fields=["status"])
