@@ -23,6 +23,14 @@ def build_overpass_query(lat: float, lng: float, radius_km: float) -> str:
       node["amenity"="parking"](around:{radius_m},{lat},{lng});
       way["amenity"="parking"](around:{radius_m},{lat},{lng});
       relation["amenity"="parking"](around:{radius_m},{lat},{lng});
+
+      node["building"="parking"](around:{radius_m},{lat},{lng});
+      way["building"="parking"](around:{radius_m},{lat},{lng});
+      relation["building"="parking"](around:{radius_m},{lat},{lng});
+
+      node["parking"](around:{radius_m},{lat},{lng});
+      way["parking"](around:{radius_m},{lat},{lng});
+      relation["parking"](around:{radius_m},{lat},{lng});
     );
     out center;
     """
