@@ -1,4 +1,7 @@
 .env
 .venv
 __pycache__
-.vscodebackend/celerybeat-schedule
+.vscode
+backend/celerybeat-schedule
+.vscode/
+backend/.vscode/
