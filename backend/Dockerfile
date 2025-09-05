@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
+ARG CACHE_BUST=1
 
 COPY requirements.txt /app/
 RUN pip install --upgrade pip \
@@ -29,4 +30,7 @@ ENV DJANGO_SETTINGS_MODULE=core.settings
 
 EXPOSE $PORT
 
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:$PORT", "--workers=4", "--threads=2", "--timeout=120"]
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
